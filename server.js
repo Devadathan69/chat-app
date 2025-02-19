@@ -14,6 +14,13 @@ const io = new Server(server, {
 });
 
 app.use(cors());
+const path = require("path");
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 app.use(express.static("public")); // Serve frontend files
 
 io.on("connection", (socket) => {
