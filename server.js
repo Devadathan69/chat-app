@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // Change this to your Netlify URL after deployment
+    origin: "https://front-benchers-chat.netlify.app/", // Change this to your Netlify URL after deployment
   },
 });
 
