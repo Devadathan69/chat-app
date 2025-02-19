@@ -5,26 +5,13 @@ const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-
 const io = new Server(server, {
   cors: {
-    origin: "https://front-benchers-chat.netlify.app/", // Change this to your Netlify URL after deployment
+    origin: "https://front-benchers-chat.netlify.app/", // Allow all origins (change this in production)
   },
 });
 
 app.use(cors());
-const path = require("path");
-app.use(express.static(path.join(__dirname, "public")));
-
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-app.use(express.static("public")); // Serve frontend files
 
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
@@ -40,6 +27,7 @@ io.on("connection", (socket) => {
 });
 
 // Start the server
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(3000, () => {
+  console.log("Server running on http://localhost:3000");
 });
+app.use(express.static("public"));
