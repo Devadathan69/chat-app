@@ -48,6 +48,9 @@
             justify-content: space-between;
             align-items: center;
         }
+        .chat-header span {
+            font-size: 14px;
+        }
         .chat-box {
             flex: 1;
             height: 300px;
@@ -73,7 +76,7 @@
             gap: 8px;
         }
         .avatar {
-            font-size: 24px; /* Emoji size */
+            font-size: 24px;
         }
         .my-message {
             background: #667eea;
@@ -96,7 +99,7 @@
             border-top: 1px solid #ddd;
             background: white;
             transition: 0.3s;
-            gap: 5px; /* Add gap between elements */
+            gap: 5px;
         }
         .dark-mode .chat-input {
             background: #333;
@@ -115,7 +118,7 @@
             padding: 10px;
             border-radius: 5px;
             cursor: pointer;
-            flex: 1; /* Makes button take full width */
+            flex: 1;
         }
         .chat-input button:hover {
             background: #5a6edc;
@@ -125,8 +128,10 @@
             color: gray;
             margin: 5px;
         }
+        .hidden {
+            display: none;
+        }
 
-        /* Responsive Design */
         @media screen and (max-width: 600px) {
             .chat-input {
                 flex-direction: column;
@@ -142,6 +147,7 @@
     <div class="chat-container">
         <div class="chat-header">
             Cool Chat App
+            <span id="online-users">Online: 0</span>
             <button onclick="toggleDarkMode()">🌙</button>
         </div>
         <div id="chat-box" class="chat-box"></div>
@@ -155,8 +161,8 @@
                 <option value="👻">👻</option>
                 <option value="🐱">🐱</option>
             </select>
-            <input id="message" placeholder="Type a message..." oninput="notifyTyping()" />
-            <button onclick="sendMessage()">Send</button>
+            <input id="message" placeholder="Type a message..." oninput="notifyTyping()" disabled />
+            <button onclick="sendMessage()" disabled>Send</button>
         </div>
     </div>
 
@@ -165,21 +171,45 @@
         const socket = io("https://chat-app-ydcu.onrender.com");
         let isTyping = false;
         let timeout;
-        let selectedEmoji = "😀"; // Default emoji
+        let selectedEmoji = "😀"; 
+        let hasSentFirstMessage = false;
 
-        // Update selected emoji when user changes it
         document.getElementById("emoji-select").addEventListener("change", (e) => {
             selectedEmoji = e.target.value;
         });
 
-        function sendMessage() {
-            const message = document.getElementById("message").value;
-            const username = document.getElementById("username").value || "Anonymous";
-            const avatar = selectedEmoji; // Use the selected emoji
+        document.getElementById("username").addEventListener("input", () => {
+            let username = document.getElementById("username").value.trim();
+            let messageInput = document.getElementById("message");
+            let sendButton = document.querySelector(".chat-input button");
 
-            if (message.trim() !== "") {
+            if (username) {
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+            } else {
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+            }
+        });
+
+        function sendMessage() {
+            const message = document.getElementById("message").value.trim();
+            const username = document.getElementById("username").value.trim();
+            const avatar = selectedEmoji;
+
+            if (!username) return;
+
+            if (message) {
                 socket.emit("message", { username, message, avatar });
                 document.getElementById("message").value = "";
+
+                if (!hasSentFirstMessage) {
+                    document.getElementById("username").disabled = true;
+                    document.getElementById("emoji-select").disabled = true;
+                    document.getElementById("username").classList.add("hidden");
+                    document.getElementById("emoji-select").classList.add("hidden");
+                    hasSentFirstMessage = true;
+                }
             }
         }
 
@@ -194,7 +224,6 @@
                 messageElement.classList.add("other-message");
             }
 
-            // Display emoji as avatar
             messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -222,6 +251,10 @@
 
         socket.on("stopTyping", () => {
             document.getElementById("typing").innerText = "";
+        });
+
+        socket.on("updateUsers", (count) => {
+            document.getElementById("online-users").innerText = `Online: ${count}`;
         });
     </script>
 
