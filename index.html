@@ -17,10 +17,6 @@
             align-items: center;
             height: 100vh;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            transition: background 0.3s ease-in-out;
-        }
-        .dark-mode {
-            background: linear-gradient(135deg, #1e1e1e, #4b4b4b);
         }
         .chat-container {
             width: 400px;
@@ -28,11 +24,6 @@
             border-radius: 10px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
             overflow: hidden;
-            transition: 0.3s;
-        }
-        .dark-mode .chat-container {
-            background: #2c2c2c;
-            color: white;
         }
         .chat-header {
             background: #764ba2;
@@ -41,9 +32,6 @@
             text-align: center;
             font-size: 18px;
             font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         .chat-box {
             height: 300px;
@@ -52,10 +40,6 @@
             display: flex;
             flex-direction: column;
             background: #f4f4f4;
-            transition: 0.3s;
-        }
-        .dark-mode .chat-box {
-            background: #444;
         }
         .message {
             max-width: 70%;
@@ -63,16 +47,12 @@
             margin: 5px;
             border-radius: 10px;
             word-wrap: break-word;
-            transition: 0.3s;
             display: flex;
             align-items: center;
-            gap: 8px;
         }
         .avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            object-fit: cover;
+            font-size: 20px;
+            margin-right: 8px;
         }
         .my-message {
             background: #667eea;
@@ -84,19 +64,11 @@
             color: black;
             align-self: flex-start;
         }
-        .dark-mode .other-message {
-            background: #555;
-            color: white;
-        }
         .chat-input {
             display: flex;
             padding: 10px;
             border-top: 1px solid #ddd;
             background: white;
-            transition: 0.3s;
-        }
-        .dark-mode .chat-input {
-            background: #333;
         }
         .chat-input input {
             flex: 1;
@@ -114,45 +86,11 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        .typing-indicator {
-            font-size: 12px;
-            color: gray;
-            margin: 5px;
+        .chat-input button:hover {
+            background: #5a67d8;
         }
-        /* Sidebar Styling */
-.sidebar {
-    position: fixed;
-    right: -250px;
-    top: 0;
-    width: 250px;
-    height: 100%;
-    background: white;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
-    transition: right 0.3s ease-in-out;
-    padding: 20px;
-}
-.sidebar-btn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 50%;
-    cursor: pointer;
-}
-.sidebar ul {
-    list-style: none;
-    padding: 0;
-}
-.sidebar li {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-    cursor: pointer;
-}
 
-        @media screen and (max-width: 600px) {
+         @media screen and (max-width: 600px) {
     .chat-input {
         flex-direction: column;
         align-items: stretch;
@@ -170,31 +108,21 @@
         font-size: 16px;
     }
 }
-
     </style>
 </head>
 <body>
-    <!-- Sidebar Button -->
-<button id="toggleSidebar" class="sidebar-btn">👥</button>
-
-<!-- Sidebar (Hidden by Default) -->
-<div id="userSidebar" class="sidebar">
-    <h2>Online Users</h2>
-    <ul id="userList"></ul>
-</div>
-
 
     <div class="chat-container">
-        <div class="chat-header">
-            Cool Chat App
-            <button onclick="toggleDarkMode()">🌙</button>
-        </div>
+        <div class="chat-header">Cool Chat App</div>
         <div id="chat-box" class="chat-box"></div>
-        <div id="typing" class="typing-indicator"></div>
         <div class="chat-input">
             <input id="username" placeholder="Your Name" />
-            <input id="message" placeholder="Type a message..." oninput="notifyTyping()" />
+            <input id="message" placeholder="Type a message..." />
             <button onclick="sendMessage()">Send</button>
+        </div>
+        <div class="chat-input">
+            <button onclick="chooseAvatar()">Choose Avatar</button>
+            <span id="selected-avatar" class="avatar">😀</span>
         </div>
     </div>
 
@@ -202,92 +130,41 @@
     <script>
         const socket = io("https://chat-app-ydcu.onrender.com");
 
-// Emoji List 🎭
-const emojiList = ["😀", "😂", "😍", "🤖", "👻", "🐱", "🐶", "🦄", "🐼", "🦊"];
-let userEmoji = localStorage.getItem("userEmoji");
+        // Load or generate avatar
+        let avatar = localStorage.getItem("chat-avatar") || "😀";
+        document.getElementById("selected-avatar").textContent = avatar;
 
-if (!userEmoji) {
-    userEmoji = emojiList[Math.floor(Math.random() * emojiList.length)];
-    localStorage.setItem("userEmoji", userEmoji);
-}
-
-// Register Username + Emoji
-const usernameInput = document.getElementById("username");
-
-usernameInput.addEventListener("input", () => {
-    socket.emit("register", { username: usernameInput.value, emoji: userEmoji });
-});
-
-function sendMessage() {
-    const message = document.getElementById("message").value;
-    const username = usernameInput.value || "Anonymous";
-
-    if (message.trim() !== "") {
-        socket.emit("message", { username, message, emoji: userEmoji });
-        document.getElementById("message").value = "";
-    }
-}
-
-        // Toggle Sidebar
-const sidebar = document.getElementById("userSidebar");
-const toggleButton = document.getElementById("toggleSidebar");
-
-toggleButton.addEventListener("click", () => {
-    sidebar.style.right = sidebar.style.right === "0px" ? "-250px" : "0px";
-});
-
-// Fetch Online Users (Temporary List)
-const userList = document.getElementById("userList");
-const dummyUsers = ["Alice", "Bob", "Charlie"]; // Later, fetch from backend
-
-dummyUsers.forEach(user => {
-    const li = document.createElement("li");
-    li.textContent = user;
-    li.addEventListener("click", () => {
-        window.location.href = `/dm.html?user=${user}`;
-    });
-    userList.appendChild(li);
-});
-
-
-socket.on("message", (data) => {
-    const chatBox = document.getElementById("chat-box");
-    const messageElement = document.createElement("div");
-    messageElement.classList.add("message");
-
-    if (data.username === usernameInput.value) {
-        messageElement.classList.add("my-message");
-    } else {
-        messageElement.classList.add("other-message");
-    }
-
-    messageElement.innerHTML = `<strong>${data.emoji} ${data.username}:</strong> ${data.message}`;
-    chatBox.appendChild(messageElement);
-    chatBox.scrollTop = chatBox.scrollHeight;
-});
-
-        function toggleDarkMode() {
-            document.body.classList.toggle("dark-mode");
+        function chooseAvatar() {
+            const emojis = ["😀", "😂", "😎", "😍", "😜", "🤔", "😇", "🤩", "😭", "👻"];
+            avatar = emojis[Math.floor(Math.random() * emojis.length)];
+            localStorage.setItem("chat-avatar", avatar);
+            document.getElementById("selected-avatar").textContent = avatar;
         }
 
-        function notifyTyping() {
-            if (!isTyping) {
-                socket.emit("typing", document.getElementById("username").value);
-                isTyping = true;
+        function sendMessage() {
+            const message = document.getElementById("message").value;
+            const username = document.getElementById("username").value || "Anonymous";
+
+            if (message.trim() !== "") {
+                socket.emit("message", { username, message, avatar });
+                document.getElementById("message").value = ""; // Clear input
             }
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                isTyping = false;
-                socket.emit("stopTyping");
-            }, 1000);
         }
 
-        socket.on("typing", (username) => {
-            document.getElementById("typing").innerText = `${username} is typing...`;
-        });
+        socket.on("message", (data) => {
+            const chatBox = document.getElementById("chat-box");
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message");
 
-        socket.on("stopTyping", () => {
-            document.getElementById("typing").innerText = "";
+            if (data.username === document.getElementById("username").value) {
+                messageElement.classList.add("my-message");
+            } else {
+                messageElement.classList.add("other-message");
+            }
+
+            messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> ${data.username}: ${data.message}`;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
         });
     </script>
 
