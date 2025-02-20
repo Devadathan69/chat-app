@@ -119,6 +119,39 @@
             color: gray;
             margin: 5px;
         }
+        /* Sidebar Styling */
+.sidebar {
+    position: fixed;
+    right: -250px;
+    top: 0;
+    width: 250px;
+    height: 100%;
+    background: white;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease-in-out;
+    padding: 20px;
+}
+.sidebar-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+.sidebar li {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+
         @media screen and (max-width: 600px) {
     .chat-input {
         flex-direction: column;
@@ -141,6 +174,15 @@
     </style>
 </head>
 <body>
+    <!-- Sidebar Button -->
+<button id="toggleSidebar" class="sidebar-btn">👥</button>
+
+<!-- Sidebar (Hidden by Default) -->
+<div id="userSidebar" class="sidebar">
+    <h2>Online Users</h2>
+    <ul id="userList"></ul>
+</div>
+
 
     <div class="chat-container">
         <div class="chat-header">
@@ -185,6 +227,28 @@ function sendMessage() {
         document.getElementById("message").value = "";
     }
 }
+
+        // Toggle Sidebar
+const sidebar = document.getElementById("userSidebar");
+const toggleButton = document.getElementById("toggleSidebar");
+
+toggleButton.addEventListener("click", () => {
+    sidebar.style.right = sidebar.style.right === "0px" ? "-250px" : "0px";
+});
+
+// Fetch Online Users (Temporary List)
+const userList = document.getElementById("userList");
+const dummyUsers = ["Alice", "Bob", "Charlie"]; // Later, fetch from backend
+
+dummyUsers.forEach(user => {
+    const li = document.createElement("li");
+    li.textContent = user;
+    li.addEventListener("click", () => {
+        window.location.href = `/dm.html?user=${user}`;
+    });
+    userList.appendChild(li);
+});
+
 
 socket.on("message", (data) => {
     const chatBox = document.getElementById("chat-box");
