@@ -17,6 +17,10 @@
             align-items: center;
             height: 100vh;
             background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: background 0.3s ease-in-out;
+        }
+        .dark-mode {
+            background: linear-gradient(135deg, #1e1e1e, #4b4b4b);
         }
         .chat-container {
             width: 400px;
@@ -24,6 +28,11 @@
             border-radius: 10px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
             overflow: hidden;
+            transition: 0.3s;
+        }
+        .dark-mode .chat-container {
+            background: #2c2c2c;
+            color: white;
         }
         .chat-header {
             background: #764ba2;
@@ -32,6 +41,9 @@
             text-align: center;
             font-size: 18px;
             font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .chat-box {
             height: 300px;
@@ -40,6 +52,10 @@
             display: flex;
             flex-direction: column;
             background: #f4f4f4;
+            transition: 0.3s;
+        }
+        .dark-mode .chat-box {
+            background: #444;
         }
         .message {
             max-width: 70%;
@@ -47,6 +63,16 @@
             margin: 5px;
             border-radius: 10px;
             word-wrap: break-word;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
         }
         .my-message {
             background: #667eea;
@@ -58,11 +84,19 @@
             color: black;
             align-self: flex-start;
         }
+        .dark-mode .other-message {
+            background: #555;
+            color: white;
+        }
         .chat-input {
             display: flex;
             padding: 10px;
             border-top: 1px solid #ddd;
             background: white;
+            transition: 0.3s;
+        }
+        .dark-mode .chat-input {
+            background: #333;
         }
         .chat-input input {
             flex: 1;
@@ -80,57 +114,43 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        .chat-input button:hover {
-            background: #5a67d8;
+        .typing-indicator {
+            font-size: 12px;
+            color: gray;
+            margin: 5px;
         }
-        @media screen and (max-width: 600px) {
-    .chat-input {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .chat-input input {
-        width: 100%;
-        margin-bottom: 5px;
-    }
-
-    .chat-input button {
-        width: 100%;
-        margin-left: 0; /* Remove left margin */
-        padding: 12px;
-        font-size: 16px;
-    }
-}
-
     </style>
 </head>
 <body>
 
     <div class="chat-container">
-        <div class="chat-header">FRONT BENCHERS CHAT🥶🤖</div>
+        <div class="chat-header">
+            Cool Chat App
+            <button onclick="toggleDarkMode()">🌙</button>
+        </div>
         <div id="chat-box" class="chat-box"></div>
+        <div id="typing" class="typing-indicator"></div>
         <div class="chat-input">
             <input id="username" placeholder="Your Name" />
-            <input id="message" placeholder="Type a message..." />
+            <input id="message" placeholder="Type a message..." oninput="notifyTyping()" />
             <button onclick="sendMessage()">Send</button>
         </div>
     </div>
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-        const socket = io("https://chat-app-ydcu.onrender.com"); // Replace with your Render backend URL
-        let username = "";
-
-        document.getElementById("username").addEventListener("blur", () => {
-            username = document.getElementById("username").value.trim() || "Anonymous";
-        });
+        const socket = io("https://chat-app-ydcu.onrender.com");
+        let isTyping = false;
+        let timeout;
 
         function sendMessage() {
-            const message = document.getElementById("message").value.trim();
-            if (message !== "") {
-                socket.emit("message", { username, message });
-                document.getElementById("message").value = ""; // Clear input
-                document.getElementById("message").focus(); // Keep focus
+            const message = document.getElementById("message").value;
+            const username = document.getElementById("username").value || "Anonymous";
+            const avatar = "https://i.pravatar.cc/30"; // Random avatar
+
+            if (message.trim() !== "") {
+                socket.emit("message", { username, message, avatar });
+                document.getElementById("message").value = "";
             }
         }
 
@@ -139,19 +159,43 @@
             const messageElement = document.createElement("div");
             messageElement.classList.add("message");
 
-            if (data.username === username) {
+            const avatarElement = document.createElement("img");
+            avatarElement.src = data.avatar;
+            avatarElement.classList.add("avatar");
+
+            if (data.username === document.getElementById("username").value) {
                 messageElement.classList.add("my-message");
             } else {
                 messageElement.classList.add("other-message");
             }
 
-            messageElement.textContent = `${data.username}: ${data.message}`;
+            messageElement.innerHTML = `<img src="${data.avatar}" class="avatar"> <span>${data.username}: ${data.message}</span>`;
             chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
 
-            // Auto-scroll to the latest message
-            setTimeout(() => {
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }, 100);
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+        }
+
+        function notifyTyping() {
+            if (!isTyping) {
+                socket.emit("typing", document.getElementById("username").value);
+                isTyping = true;
+            }
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                isTyping = false;
+                socket.emit("stopTyping");
+            }, 1000);
+        }
+
+        socket.on("typing", (username) => {
+            document.getElementById("typing").innerText = `${username} is typing...`;
+        });
+
+        socket.on("stopTyping", () => {
+            document.getElementById("typing").innerText = "";
         });
     </script>
 
