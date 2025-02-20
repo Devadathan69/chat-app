@@ -235,8 +235,13 @@
         });
 
         socket.on("onlineUsers", (data) => {
-    document.getElementById("online-users").innerText = `Online: ${data.count}`;
+    if (data && data.count !== undefined) {
+        document.getElementById("online-users").innerText = `Online: ${data.count}`;
+    } else {
+        console.error("Error: Received invalid online user data", data);
+    }
 });
+
 
 
         function toggleDarkMode() {
