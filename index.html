@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gabble</title>
+    <title>Cool Chat App</title>
     <style>
         * {
             margin: 0;
@@ -69,10 +69,7 @@
             gap: 8px;
         }
         .avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            object-fit: cover;
+            font-size: 24px; /* Emoji size */
         }
         .my-message {
             background: #667eea;
@@ -94,11 +91,12 @@
             border-top: 1px solid #ddd;
             background: white;
             transition: 0.3s;
+            gap: 5px; /* Add gap between elements */
         }
         .dark-mode .chat-input {
             background: #333;
         }
-        .chat-input input {
+        .chat-input input, .chat-input select {
             flex: 1;
             padding: 10px;
             border: 1px solid #ddd;
@@ -110,7 +108,6 @@
             color: white;
             border: none;
             padding: 10px 15px;
-            margin-left: 5px;
             border-radius: 5px;
             cursor: pointer;
         }
@@ -120,37 +117,35 @@
             margin: 5px;
         }
 
-         @media screen and (max-width: 600px) {
-    .chat-input {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .chat-input input {
-        width: 100%;
-        margin-bottom: 5px;
-    }
-
-    .chat-input button {
-        width: 100%;
-        margin-left: 0; /* Remove left margin */
-        padding: 12px;
-        font-size: 16px;
-    }
-}
+        @media screen and (max-width: 600px) {
+            .chat-input {
+                flex-direction: column;
+            }
+            .chat-input input, .chat-input button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="chat-container">
         <div class="chat-header">
-            Gabble
+            Cool Chat App
             <button onclick="toggleDarkMode()">🌙</button>
         </div>
         <div id="chat-box" class="chat-box"></div>
         <div id="typing" class="typing-indicator"></div>
         <div class="chat-input">
             <input id="username" placeholder="Your Name" />
+            <select id="emoji-select">
+                <option value="😀">😀</option>
+                <option value="😎">😎</option>
+                <option value="🤖">🤖</option>
+                <option value="👻">👻</option>
+                <option value="🐱">🐱</option>
+            </select>
             <input id="message" placeholder="Type a message..." oninput="notifyTyping()" />
             <button onclick="sendMessage()">Send</button>
         </div>
@@ -161,11 +156,17 @@
         const socket = io("https://chat-app-ydcu.onrender.com");
         let isTyping = false;
         let timeout;
+        let selectedEmoji = "😀"; // Default emoji
+
+        // Update selected emoji when user changes it
+        document.getElementById("emoji-select").addEventListener("change", (e) => {
+            selectedEmoji = e.target.value;
+        });
 
         function sendMessage() {
             const message = document.getElementById("message").value;
             const username = document.getElementById("username").value || "Anonymous";
-            const avatar = "https://i.pravatar.cc/30"; // Random avatar
+            const avatar = selectedEmoji; // Use the selected emoji
 
             if (message.trim() !== "") {
                 socket.emit("message", { username, message, avatar });
@@ -178,17 +179,14 @@
             const messageElement = document.createElement("div");
             messageElement.classList.add("message");
 
-            const avatarElement = document.createElement("img");
-            avatarElement.src = data.avatar;
-            avatarElement.classList.add("avatar");
-
             if (data.username === document.getElementById("username").value) {
                 messageElement.classList.add("my-message");
             } else {
                 messageElement.classList.add("other-message");
             }
 
-            messageElement.innerHTML = `<img src="${data.avatar}" class="avatar"> <span>${data.username}: ${data.message}</span>`;
+            // Display emoji as avatar
+            messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
         });
@@ -219,4 +217,4 @@
     </script>
 
 </body>
-</html> 
+</html>
