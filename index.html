@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NextGen Chat</title>
+    <title>ChatSphere</title>
     <style>
         * {
             margin: 0;
@@ -16,19 +16,26 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: linear-gradient(135deg, #222, #444);
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: background 0.3s ease;
+        }
+        body.dark-mode {
+            background: linear-gradient(135deg, #1e1e1e, #444);
             color: white;
-            transition: background 0.3s;
         }
         .chat-container {
             width: 400px;
-            background: #333;
+            background: white;
             border-radius: 10px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
             overflow: hidden;
+            transition: background 0.3s ease;
+        }
+        body.dark-mode .chat-container {
+            background: #2b2b2b;
         }
         .chat-header {
-            background: #555;
+            background: #764ba2;
             color: white;
             padding: 15px;
             text-align: center;
@@ -38,9 +45,9 @@
             justify-content: space-between;
             align-items: center;
         }
-        .toggle-dark {
+        .toggle-dark-mode {
             cursor: pointer;
-            font-size: 18px;
+            font-size: 16px;
         }
         .chat-box {
             height: 300px;
@@ -48,7 +55,10 @@
             padding: 10px;
             display: flex;
             flex-direction: column;
-            background: #222;
+            background: #f4f4f4;
+        }
+        body.dark-mode .chat-box {
+            background: #3b3b3b;
         }
         .message {
             max-width: 70%;
@@ -63,44 +73,16 @@
             font-size: 20px;
             margin-right: 8px;
         }
-        .my-message {
-            background: #667eea;
-            color: white;
-            align-self: flex-end;
-        }
-        .other-message {
-            background: #555;
-            color: white;
-            align-self: flex-start;
-        }
-        .typing-indicator {
-            font-size: 12px;
-            color: #bbb;
-            margin-left: 10px;
-        }
-        .online-users {
-            font-size: 14px;
-            padding: 10px;
-            background: #444;
-            text-align: center;
-        }
-        .dm-button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
         .chat-input {
             display: flex;
             padding: 10px;
-            background: #333;
+            border-top: 1px solid #ddd;
+            background: white;
         }
         .chat-input input {
             flex: 1;
             padding: 10px;
-            border: none;
+            border: 1px solid #ddd;
             border-radius: 5px;
             outline: none;
         }
@@ -109,10 +91,31 @@
             color: white;
             border: none;
             padding: 10px 15px;
+            margin-left: 5px;
             border-radius: 5px;
             cursor: pointer;
         }
-
+        .dm-button {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 5px;
+            width: 100%;
+        }
+        .emoji-picker {
+            display: flex;
+            overflow-x: auto;
+            padding: 5px;
+            background: #ddd;
+        }
+        .emoji-picker span {
+            cursor: pointer;
+            font-size: 20px;
+            margin-right: 5px;
+        }
          @media screen and (max-width: 600px) {
     .chat-input {
         flex-direction: column;
@@ -134,64 +137,67 @@
     </style>
 </head>
 <body>
+
     <div class="chat-container">
         <div class="chat-header">
-            NextGen Chat
-            <span class="toggle-dark" onclick="toggleDarkMode()">🌙</span>
+            ChatSphere
+            <span class="toggle-dark-mode" onclick="toggleDarkMode()">🌙</span>
         </div>
-        <div id="online-users" class="online-users">Online: 0</div>
+        <button class="dm-button" onclick="goToDM()">Direct Messages</button>
         <div id="chat-box" class="chat-box"></div>
         <div class="chat-input">
             <input id="username" placeholder="Your Name" />
-            <input id="message" placeholder="Type a message..." oninput="userTyping()" />
+            <input id="message" placeholder="Type a message..." />
             <button onclick="sendMessage()">Send</button>
         </div>
         <div class="chat-input">
-            <button onclick="chooseAvatar()">Choose Avatar</button>
+            <div class="emoji-picker">
+                <span onclick="setAvatar('😀')">😀</span>
+                <span onclick="setAvatar('😂')">😂</span>
+                <span onclick="setAvatar('😎')">😎</span>
+                <span onclick="setAvatar('😍')">😍</span>
+                <span onclick="setAvatar('😜')">😜</span>
+            </div>
             <span id="selected-avatar" class="avatar">😀</span>
-            <button class="dm-button" onclick="goToDM()">DM</button>
         </div>
     </div>
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         const socket = io("https://chat-app-ydcu.onrender.com");
+        
         let avatar = localStorage.getItem("chat-avatar") || "😀";
         document.getElementById("selected-avatar").textContent = avatar;
-        function chooseAvatar() {
-            const emojis = ["😀", "😂", "😎", "😍", "😜", "🤔", "😇", "🤩", "😭", "👻", "💀", "👽", "🤖", "🐱", "🐶"];
-            avatar = emojis[Math.floor(Math.random() * emojis.length)];
+
+        function setAvatar(emoji) {
+            avatar = emoji;
             localStorage.setItem("chat-avatar", avatar);
             document.getElementById("selected-avatar").textContent = avatar;
         }
+
         function sendMessage() {
             const message = document.getElementById("message").value;
             const username = document.getElementById("username").value || "Anonymous";
+
             if (message.trim() !== "") {
                 socket.emit("message", { username, message, avatar });
                 document.getElementById("message").value = "";
             }
         }
-        function userTyping() {
-            socket.emit("typing", document.getElementById("username").value || "Someone");
-        }
+
         socket.on("message", (data) => {
             const chatBox = document.getElementById("chat-box");
             const messageElement = document.createElement("div");
-            messageElement.classList.add("message", data.username === document.getElementById("username").value ? "my-message" : "other-message");
+            messageElement.classList.add("message");
             messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> ${data.username}: ${data.message}`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
         });
-        socket.on("typing", (username) => {
-            document.getElementById("chat-box").innerHTML += `<div class='typing-indicator'>${username} is typing...</div>`;
-        });
-        socket.on("online-users", (count) => {
-            document.getElementById("online-users").textContent = `Online: ${count}`;
-        });
+
         function toggleDarkMode() {
-            document.body.style.background = document.body.style.background === "rgb(34, 34, 34)" ? "#f4f4f4" : "#222";
+            document.body.classList.toggle("dark-mode");
         }
+
         function goToDM() {
             window.location.href = "dm.html";
         }
