@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DM Chat</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .chat-box { width: 90%; max-width: 400px; margin: auto; border: 1px solid #ddd; padding: 10px; }
+        .message { background: #f1f1f1; padding: 8px; margin: 5px 0; border-radius: 5px; }
+        .my-message { background: #667eea; color: white; text-align: right; }
+        .chat-input { display: flex; margin-top: 10px; }
+        input { flex: 1; padding: 8px; }
+        button { padding: 8px; background: #667eea; color: white; border: none; }
+    </style>
+</head>
+<body>
+    <h2 id="chatWith"></h2>
+    <div id="chat-box" class="chat-box"></div>
+    <div class="chat-input">
+        <input id="message" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const socket = io("https://chat-app-ydcu.onrender.com");
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatWith = urlParams.get("user");
+        document.getElementById("chatWith").innerText = "Chat with " + chatWith;
+
+        function sendMessage() {
+            const message = document.getElementById("message").value;
+            if (message.trim() !== "") {
+                socket.emit("privateMessage", { to: chatWith, message });
+                document.getElementById("message").value = "";
+            }
+        }
+
+        socket.on("privateMessage", (data) => {
+            const chatBox = document.getElementById("chat-box");
+            const msg = document.createElement("div");
+            msg.classList.add("message");
+            msg.textContent = `${data.from}: ${data.message}`;
+            chatBox.appendChild(msg);
+        });
+    </script>
+</body>
+</html>
