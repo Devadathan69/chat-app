@@ -166,6 +166,7 @@
                 <option value="🐱‍👤">🐱‍👤</option>
                 <option value="🐌">🐌</option>
             </select>
+            <button onclick="setUsername()">Set Name</button>
             <input id="message" placeholder="Type a message..." oninput="notifyTyping()" disabled />
             <button onclick="sendMessage()" disabled>Send</button>
         </div>
@@ -179,42 +180,32 @@
         let selectedEmoji = "😀"; 
         let hasSentFirstMessage = false;
 
-        document.getElementById("emoji-select").addEventListener("change", (e) => {
-            selectedEmoji = e.target.value;
-        });
-
-        document.getElementById("username").addEventListener("input", () => {
-            let username = document.getElementById("username").value.trim();
-            let messageInput = document.getElementById("message");
-            let sendButton = document.querySelector(".chat-input button");
-
-            if (username) {
-                messageInput.disabled = false;
-                sendButton.disabled = false;
-            } else {
-                messageInput.disabled = true;
-                sendButton.disabled = true;
+        function setUsername() {
+            const username = document.getElementById("username").value.trim();
+            if (!username) {
+                alert("Please enter a username.");
+                return;
             }
-        });
+
+            socket.emit("setUsername", username);
+
+            document.getElementById("username").disabled = true;
+            document.getElementById("emoji-select").disabled = true;
+            document.querySelector(".chat-input button").disabled = false;
+        }
 
         function sendMessage() {
             const message = document.getElementById("message").value.trim();
             const username = document.getElementById("username").value.trim();
-            const avatar = selectedEmoji;
+            if (!username || !message) return;
 
-            if (!username) return;
+            socket.emit("message", { username, message, avatar: selectedEmoji });
+            document.getElementById("message").value = "";
 
-            if (message) {
-                socket.emit("message", { username, message, avatar });
-                document.getElementById("message").value = "";
-
-                if (!hasSentFirstMessage) {
-                    document.getElementById("username").disabled = true;
-                    document.getElementById("emoji-select").disabled = true;
-                    document.getElementById("username").classList.add("hidden");
-                    document.getElementById("emoji-select").classList.add("hidden");
-                    hasSentFirstMessage = true;
-                }
+            if (!hasSentFirstMessage) {
+                document.getElementById("username").classList.add("hidden");
+                document.getElementById("emoji-select").classList.add("hidden");
+                hasSentFirstMessage = true;
             }
         }
 
@@ -235,42 +226,12 @@
         });
 
         socket.on("onlineUsers", (data) => {
-    if (data && data.count !== undefined) {
-        document.getElementById("online-users").innerText = `Online: ${data.count}`;
-    } else {
-        console.error("Error: Received invalid online user data", data);
-    }
-});
-
-
+            document.getElementById("online-users").innerText = `Online: ${data.count}`;
+        });
 
         function toggleDarkMode() {
             document.body.classList.toggle("dark-mode");
         }
-
-        function notifyTyping() {
-            if (!isTyping) {
-                socket.emit("typing", document.getElementById("username").value);
-                isTyping = true;
-            }
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                isTyping = false;
-                socket.emit("stopTyping");
-            }, 1000);
-        }
-
-        socket.on("typing", (username) => {
-            document.getElementById("typing").innerText = `${username} is typing...`;
-        });
-
-        socket.on("stopTyping", () => {
-            document.getElementById("typing").innerText = "";
-        });
-
-        socket.on("updateUsers", (count) => {
-            document.getElementById("online-users").innerText = `Online: ${count}`;
-        });
     </script>
 
 </body>
