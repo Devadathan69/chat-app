@@ -174,65 +174,71 @@
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-        const socket = io("https://chat-app-ydcu.onrender.com");
-        let isTyping = false;
-        let timeout;
-        let selectedEmoji = "😀"; 
-        let hasSentFirstMessage = false;
+    const socket = io("https://chat-app-ydcu.onrender.com");
+    let isTyping = false;
+    let timeout;
+    let selectedEmoji = "😀"; 
+    let hasSentFirstMessage = false;
 
-        function setUsername() {
-            const username = document.getElementById("username").value.trim();
-            if (!username) {
-                alert("Please enter a username.");
-                return;
-            }
-
-            socket.emit("setUsername", username);
-
-            document.getElementById("username").disabled = true;
-            document.getElementById("emoji-select").disabled = true;
-            document.querySelector(".chat-input button").disabled = false;
+    function setUsername() {
+        const username = document.getElementById("username").value.trim();
+        if (!username) {
+            alert("Please enter a username.");
+            return;
         }
 
-        function sendMessage() {
-            const message = document.getElementById("message").value.trim();
-            const username = document.getElementById("username").value.trim();
-            if (!username || !message) return;
+        socket.emit("setUsername", username);
 
-            socket.emit("message", { username, message, avatar: selectedEmoji });
-            document.getElementById("message").value = "";
+        // Disable username and emoji selection after setting the name
+        document.getElementById("username").disabled = true;
+        document.getElementById("emoji-select").disabled = true;
+        document.querySelector(".chat-input button").disabled = false;
 
-            if (!hasSentFirstMessage) {
-                document.getElementById("username").classList.add("hidden");
-                document.getElementById("emoji-select").classList.add("hidden");
-                hasSentFirstMessage = true;
-            }
+        // Enable message input and send button
+        document.getElementById("message").disabled = false;
+        document.querySelector(".chat-input button:last-of-type").disabled = false; 
+    }
+
+    function sendMessage() {
+        const message = document.getElementById("message").value.trim();
+        const username = document.getElementById("username").value.trim();
+        if (!username || !message) return;
+
+        socket.emit("message", { username, message, avatar: selectedEmoji });
+        document.getElementById("message").value = "";
+
+        if (!hasSentFirstMessage) {
+            document.getElementById("username").classList.add("hidden");
+            document.getElementById("emoji-select").classList.add("hidden");
+            hasSentFirstMessage = true;
+        }
+    }
+
+    socket.on("message", (data) => {
+        const chatBox = document.getElementById("chat-box");
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message");
+
+        if (data.username === document.getElementById("username").value) {
+            messageElement.classList.add("my-message");
+        } else {
+            messageElement.classList.add("other-message");
         }
 
-        socket.on("message", (data) => {
-            const chatBox = document.getElementById("chat-box");
-            const messageElement = document.createElement("div");
-            messageElement.classList.add("message");
+        messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
+        chatBox.appendChild(messageElement);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
 
-            if (data.username === document.getElementById("username").value) {
-                messageElement.classList.add("my-message");
-            } else {
-                messageElement.classList.add("other-message");
-            }
+    socket.on("onlineUsers", (data) => {
+        document.getElementById("online-users").innerText = `Online: ${data.count}`;
+    });
 
-            messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
-            chatBox.appendChild(messageElement);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        });
+    function toggleDarkMode() {
+        document.body.classList.toggle("dark-mode");
+    }
+</script>
 
-        socket.on("onlineUsers", (data) => {
-            document.getElementById("online-users").innerText = `Online: ${data.count}`;
-        });
-
-        function toggleDarkMode() {
-            document.body.classList.toggle("dark-mode");
-        }
-    </script>
 
 </body>
 </html>
