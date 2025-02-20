@@ -99,31 +99,35 @@
             color: white;
         }
         .chat-input {
-            display: flex;
-            padding: 10px;
-            border-top: 1px solid #ddd;
-            background: white;
-            transition: 0.3s;
-        }
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background: white;
+    transition: 0.3s;
+    gap: 5px; /* Add gap between elements */
+}
+
+.chat-input input, .chat-input select {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    outline: none;
+}
+
+.chat-input button {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap; /* Prevent text wrapping */
+}
         .dark-mode .chat-input {
             background: #333;
         }
-        .chat-input input, .chat-input select {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            outline: none;
-        }
-        .chat-input button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            margin-left: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+        
         .typing-indicator {
             font-size: 12px;
             color: gray;
