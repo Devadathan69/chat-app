@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cool Chat App</title>
+    <title>NextGen Chat</title>
     <style>
         * {
             margin: 0;
@@ -16,22 +16,31 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #222, #444);
+            color: white;
+            transition: background 0.3s;
         }
         .chat-container {
             width: 400px;
-            background: white;
+            background: #333;
             border-radius: 10px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
             overflow: hidden;
         }
         .chat-header {
-            background: #764ba2;
+            background: #555;
             color: white;
             padding: 15px;
             text-align: center;
             font-size: 18px;
             font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .toggle-dark {
+            cursor: pointer;
+            font-size: 18px;
         }
         .chat-box {
             height: 300px;
@@ -39,7 +48,7 @@
             padding: 10px;
             display: flex;
             flex-direction: column;
-            background: #f4f4f4;
+            background: #222;
         }
         .message {
             max-width: 70%;
@@ -60,20 +69,38 @@
             align-self: flex-end;
         }
         .other-message {
-            background: #e0e0e0;
-            color: black;
+            background: #555;
+            color: white;
             align-self: flex-start;
+        }
+        .typing-indicator {
+            font-size: 12px;
+            color: #bbb;
+            margin-left: 10px;
+        }
+        .online-users {
+            font-size: 14px;
+            padding: 10px;
+            background: #444;
+            text-align: center;
+        }
+        .dm-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
         }
         .chat-input {
             display: flex;
             padding: 10px;
-            border-top: 1px solid #ddd;
-            background: white;
+            background: #333;
         }
         .chat-input input {
             flex: 1;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: none;
             border-radius: 5px;
             outline: none;
         }
@@ -82,91 +109,73 @@
             color: white;
             border: none;
             padding: 10px 15px;
-            margin-left: 5px;
             border-radius: 5px;
             cursor: pointer;
         }
-        .chat-input button:hover {
-            background: #5a67d8;
-        }
-
-         @media screen and (max-width: 600px) {
-    .chat-input {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .chat-input input {
-        width: 100%;
-        margin-bottom: 5px;
-    }
-
-    .chat-input button {
-        width: 100%;
-        margin-left: 0; /* Remove left margin */
-        padding: 12px;
-        font-size: 16px;
-    }
-}
     </style>
 </head>
 <body>
-
     <div class="chat-container">
-        <div class="chat-header">Cool Chat App</div>
+        <div class="chat-header">
+            NextGen Chat
+            <span class="toggle-dark" onclick="toggleDarkMode()">🌙</span>
+        </div>
+        <div id="online-users" class="online-users">Online: 0</div>
         <div id="chat-box" class="chat-box"></div>
         <div class="chat-input">
             <input id="username" placeholder="Your Name" />
-            <input id="message" placeholder="Type a message..." />
+            <input id="message" placeholder="Type a message..." oninput="userTyping()" />
             <button onclick="sendMessage()">Send</button>
         </div>
         <div class="chat-input">
             <button onclick="chooseAvatar()">Choose Avatar</button>
             <span id="selected-avatar" class="avatar">😀</span>
+            <button class="dm-button" onclick="goToDM()">DM</button>
         </div>
     </div>
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         const socket = io("https://chat-app-ydcu.onrender.com");
-
-        // Load or generate avatar
         let avatar = localStorage.getItem("chat-avatar") || "😀";
         document.getElementById("selected-avatar").textContent = avatar;
-
         function chooseAvatar() {
-            const emojis = ["😀", "😂", "😎", "😍", "😜", "🤔", "😇", "🤩", "😭", "👻"];
+            const emojis = ["😀", "😂", "😎", "😍", "😜", "🤔", "😇", "🤩", "😭", "👻", "💀", "👽", "🤖", "🐱", "🐶"];
             avatar = emojis[Math.floor(Math.random() * emojis.length)];
             localStorage.setItem("chat-avatar", avatar);
             document.getElementById("selected-avatar").textContent = avatar;
         }
-
         function sendMessage() {
             const message = document.getElementById("message").value;
             const username = document.getElementById("username").value || "Anonymous";
-
             if (message.trim() !== "") {
                 socket.emit("message", { username, message, avatar });
-                document.getElementById("message").value = ""; // Clear input
+                document.getElementById("message").value = "";
             }
         }
-
+        function userTyping() {
+            socket.emit("typing", document.getElementById("username").value || "Someone");
+        }
         socket.on("message", (data) => {
             const chatBox = document.getElementById("chat-box");
             const messageElement = document.createElement("div");
-            messageElement.classList.add("message");
-
-            if (data.username === document.getElementById("username").value) {
-                messageElement.classList.add("my-message");
-            } else {
-                messageElement.classList.add("other-message");
-            }
-
+            messageElement.classList.add("message", data.username === document.getElementById("username").value ? "my-message" : "other-message");
             messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> ${data.username}: ${data.message}`;
             chatBox.appendChild(messageElement);
-            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+            chatBox.scrollTop = chatBox.scrollHeight;
         });
+        socket.on("typing", (username) => {
+            document.getElementById("chat-box").innerHTML += `<div class='typing-indicator'>${username} is typing...</div>`;
+        });
+        socket.on("online-users", (count) => {
+            document.getElementById("online-users").textContent = `Online: ${count}`;
+        });
+        function toggleDarkMode() {
+            document.body.style.background = document.body.style.background === "rgb(34, 34, 34)" ? "#f4f4f4" : "#222";
+        }
+        function goToDM() {
+            window.location.href = "dm.html";
+        }
     </script>
-
 </body>
 </html>
