@@ -37,13 +37,6 @@ io.on("connection", (socket) => {
         socket.broadcast.emit("stopTyping");
     });
 
-    socket.on("dm", (data) => {
-        const recipientSocket = Array.from(onlineUsers.entries()).find(([_, user]) => user === data.recipient)?.[0];
-        if (recipientSocket) {
-            io.to(recipientSocket).emit("dm", data);
-        }
-    });
-
     socket.on("disconnect", () => {
         onlineUsers.delete(socket.id);
         io.emit("onlineUsers", Array.from(onlineUsers.values()));
@@ -52,4 +45,4 @@ io.on("connection", (socket) => {
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-});
+}); 
