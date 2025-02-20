@@ -234,6 +234,11 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
+        socket.on("onlineUsers", (data) => {
+    document.getElementById("online-users-list").innerHTML = 
+        data.users.map(user => `<li>${user}</li>`).join("");
+});
+
         function toggleDarkMode() {
             document.body.classList.toggle("dark-mode");
         }
