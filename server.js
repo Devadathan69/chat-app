@@ -23,17 +23,24 @@ app.get("/", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
+    console.log("A user connected:", socket.id);
 
-  // When a user sends a message
-  socket.on("message", (data) => {
-    io.emit("message", data); // Send message to all users
-  });
+    // Store online users
+    socket.on("register", (username) => {
+        socket.username = username;
+    });
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-  });
+    // Private Messaging
+    socket.on("privateMessage", (data) => {
+        const { to, message } = data;
+        io.to(to).emit("privateMessage", { from: socket.username, message });
+    });
+
+    socket.on("disconnect", () => {
+        console.log("User disconnected:", socket.id);
+    });
 });
+
 
 // Start the server
 server.listen(PORT, () => {
