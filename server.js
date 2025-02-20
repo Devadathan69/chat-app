@@ -14,6 +14,18 @@ const io = new Server(server, {
 let messages = [];
 let onlineUsers = new Map();
 
+function updateOnlineUsers() {
+    const onlineUserData = {
+        users: Array.from(onlineUsers.values()),
+        count: onlineUsers.size
+    };
+    
+    console.log("Sending online user data:", onlineUserData); // Debugging
+
+    io.emit("onlineUsers", onlineUserData);
+}
+
+
 io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
