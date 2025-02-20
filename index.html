@@ -159,39 +159,48 @@
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         const socket = io("https://chat-app-ydcu.onrender.com");
-        let isTyping = false;
-        let timeout;
 
-        function sendMessage() {
-            const message = document.getElementById("message").value;
-            const username = document.getElementById("username").value || "Anonymous";
-            const avatar = "https://i.pravatar.cc/30"; // Random avatar
+// Emoji List 🎭
+const emojiList = ["😀", "😂", "😍", "🤖", "👻", "🐱", "🐶", "🦄", "🐼", "🦊"];
+let userEmoji = localStorage.getItem("userEmoji");
 
-            if (message.trim() !== "") {
-                socket.emit("message", { username, message, avatar });
-                document.getElementById("message").value = "";
-            }
-        }
+if (!userEmoji) {
+    userEmoji = emojiList[Math.floor(Math.random() * emojiList.length)];
+    localStorage.setItem("userEmoji", userEmoji);
+}
 
-        socket.on("message", (data) => {
-            const chatBox = document.getElementById("chat-box");
-            const messageElement = document.createElement("div");
-            messageElement.classList.add("message");
+// Register Username + Emoji
+const usernameInput = document.getElementById("username");
 
-            const avatarElement = document.createElement("img");
-            avatarElement.src = data.avatar;
-            avatarElement.classList.add("avatar");
+usernameInput.addEventListener("input", () => {
+    socket.emit("register", { username: usernameInput.value, emoji: userEmoji });
+});
 
-            if (data.username === document.getElementById("username").value) {
-                messageElement.classList.add("my-message");
-            } else {
-                messageElement.classList.add("other-message");
-            }
+function sendMessage() {
+    const message = document.getElementById("message").value;
+    const username = usernameInput.value || "Anonymous";
 
-            messageElement.innerHTML = `<img src="${data.avatar}" class="avatar"> <span>${data.username}: ${data.message}</span>`;
-            chatBox.appendChild(messageElement);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        });
+    if (message.trim() !== "") {
+        socket.emit("message", { username, message, emoji: userEmoji });
+        document.getElementById("message").value = "";
+    }
+}
+
+socket.on("message", (data) => {
+    const chatBox = document.getElementById("chat-box");
+    const messageElement = document.createElement("div");
+    messageElement.classList.add("message");
+
+    if (data.username === usernameInput.value) {
+        messageElement.classList.add("my-message");
+    } else {
+        messageElement.classList.add("other-message");
+    }
+
+    messageElement.innerHTML = `<strong>${data.emoji} ${data.username}:</strong> ${data.message}`;
+    chatBox.appendChild(messageElement);
+    chatBox.scrollTop = chatBox.scrollHeight;
+});
 
         function toggleDarkMode() {
             document.body.classList.toggle("dark-mode");
