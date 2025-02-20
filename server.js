@@ -14,33 +14,35 @@ const io = new Server(server, {
 let messages = [];
 let onlineUsers = new Map();
 
+// Function to update online users
 function updateOnlineUsers() {
-    const onlineUserData = {
-        users: Array.from(onlineUsers.values()),
-        count: onlineUsers.size
-    };
-    
-    console.log("Sending online user data:", onlineUserData); // Debugging
-
-    io.emit("onlineUsers", onlineUserData);
+    io.emit("onlineUsers", { users: Array.from(onlineUsers.values()), count: onlineUsers.size });
 }
 
-
+// When a user connects
 io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+    console.log(`User connected: ${socket.id}`);
 
     socket.emit("chatHistory", messages);
 
+    // Listen for username setup
     socket.on("setUsername", (username) => {
-        onlineUsers.set(socket.id, username);
-        io.emit("onlineUsers", Array.from(onlineUsers.values()));
+        if (username.trim() !== "") {
+            onlineUsers.set(socket.id, username);
+            console.log(`User set name: ${username}`);
+            updateOnlineUsers();
+        }
     });
 
+    // Listen for messages
     socket.on("message", (data) => {
-        messages.push(data);
-        io.emit("message", data);
+        if (data.username && data.message.trim() !== "") {
+            messages.push(data);
+            io.emit("message", data);
+        }
     });
 
+    // Listen for typing
     socket.on("typing", (username) => {
         socket.broadcast.emit("typing", username);
     });
@@ -49,12 +51,15 @@ io.on("connection", (socket) => {
         socket.broadcast.emit("stopTyping");
     });
 
+    // When a user disconnects
     socket.on("disconnect", () => {
+        console.log(`User disconnected: ${socket.id}`);
         onlineUsers.delete(socket.id);
-        io.emit("onlineUsers", Array.from(onlineUsers.values()));
+        updateOnlineUsers();
     });
 });
 
+// Start the server
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-}); 
+});
