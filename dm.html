@@ -73,6 +73,7 @@
         .chat-input {
             display: flex;
             margin-top: 10px;
+            gap: 5px;
         }
         .chat-input input {
             flex: 1;
@@ -85,9 +86,9 @@
             color: white;
             border: none;
             padding: 10px;
-            margin-left: 5px;
             border-radius: 5px;
             cursor: pointer;
+            white-space: nowrap;
         }
         .chat-input button:hover {
             background: #5a67d8;
@@ -121,6 +122,7 @@
         <div class="chat-box" id="chat-box"></div>
         <div class="chat-input">
             <input id="message" placeholder="Type a message..." />
+            <input type="hidden" id="recipient" />
             <button onclick="sendMessage()">Send</button>
         </div>
     </div>
@@ -163,7 +165,9 @@
 
         socket.on("onlineUsers", (users) => {
             const userList = document.getElementById("user-list");
-            userList.innerHTML = users.map(user => `<div class="user" onclick="selectUser('${user}')">${user}</div>`).join("");
+            userList.innerHTML = users.map(user => `
+                <div class="user" onclick="selectUser('${user}')">${user}</div>
+            `).join("");
         });
 
         function selectUser(user) {
