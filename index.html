@@ -32,6 +32,7 @@
             transition: 0.3s;
             display: flex;
             flex-direction: column;
+            height: 90vh;
         }
         .dark-mode .chat-container {
             background: #2c2c2c;
@@ -53,13 +54,14 @@
         }
         .chat-box {
             flex: 1;
-            height: 300px;
+            height: calc(100% - 120px);
             overflow-y: auto;
             padding: 10px;
             display: flex;
             flex-direction: column;
             background: #f4f4f4;
             transition: 0.3s;
+            scrollbar-width: thin;
         }
         .dark-mode .chat-box {
             background: #444;
@@ -133,6 +135,11 @@
         }
 
         @media screen and (max-width: 600px) {
+            .chat-container {
+                height: 100vh;
+                width: 100%;
+                border-radius: 0;
+            }
             .chat-input {
                 flex-direction: column;
             }
@@ -160,13 +167,8 @@
                 <option value="🤖">🤖</option>
                 <option value="👻">👻</option>
                 <option value="🐱">🐱</option>
-                <option value="👽">👽</option>
-                <option value="🐱‍🐉">🐱‍🐉</option>
-                <option value="🐓">🐓</option>
-                <option value="🐱‍👤">🐱‍👤</option>
-                <option value="🐌">🐌</option>
             </select>
-            <button onclick="setUsername()">Set Name</button>
+            <button id="set-name-btn" onclick="setUsername()">Set Name</button>
             <input id="message" placeholder="Type a message..." oninput="notifyTyping()" disabled />
             <button onclick="sendMessage()" disabled>Send</button>
         </div>
@@ -174,71 +176,75 @@
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-    const socket = io("https://chat-app-ydcu.onrender.com");
-    let isTyping = false;
-    let timeout;
-    let selectedEmoji = "😀"; 
-    let hasSentFirstMessage = false;
+        const socket = io("https://chat-app-ydcu.onrender.com");
+        let isTyping = false;
+        let timeout;
+        let selectedEmoji = "😀"; 
+        let hasSentFirstMessage = false;
 
-    function setUsername() {
-        const username = document.getElementById("username").value.trim();
-        if (!username) {
-            alert("Please enter a username.");
-            return;
-        }
+        function setUsername() {
+            const username = document.getElementById("username").value.trim();
+            if (!username) return;
+            
+            socket.emit("setUsername", username);
+            
+            document.getElementById("message").disabled = false;
+            document.querySelector(".chat-input button:last-child").disabled = false;
 
-        socket.emit("setUsername", username);
-
-        // Disable username and emoji selection after setting the name
-        document.getElementById("username").disabled = true;
-        document.getElementById("emoji-select").disabled = true;
-        document.querySelector(".chat-input button").disabled = false;
-
-        // Enable message input and send button
-        document.getElementById("message").disabled = false;
-        document.querySelector(".chat-input button:last-of-type").disabled = false; 
-    }
-
-    function sendMessage() {
-        const message = document.getElementById("message").value.trim();
-        const username = document.getElementById("username").value.trim();
-        if (!username || !message) return;
-
-        socket.emit("message", { username, message, avatar: selectedEmoji });
-        document.getElementById("message").value = "";
-
-        if (!hasSentFirstMessage) {
             document.getElementById("username").classList.add("hidden");
             document.getElementById("emoji-select").classList.add("hidden");
-            hasSentFirstMessage = true;
-        }
-    }
-
-    socket.on("message", (data) => {
-        const chatBox = document.getElementById("chat-box");
-        const messageElement = document.createElement("div");
-        messageElement.classList.add("message");
-
-        if (data.username === document.getElementById("username").value) {
-            messageElement.classList.add("my-message");
-        } else {
-            messageElement.classList.add("other-message");
+            document.getElementById("set-name-btn").classList.add("hidden");
         }
 
-        messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
-        chatBox.appendChild(messageElement);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    });
+        function sendMessage() {
+            const message = document.getElementById("message").value.trim();
+            const username = document.getElementById("username").value.trim();
+            if (!username || !message) return;
 
-    socket.on("onlineUsers", (data) => {
-        document.getElementById("online-users").innerText = `Online: ${data.count}`;
-    });
+            socket.emit("message", { username, message, avatar: selectedEmoji });
+            document.getElementById("message").value = "";
 
-    function toggleDarkMode() {
-        document.body.classList.toggle("dark-mode");
-    }
-</script>
+            if (!hasSentFirstMessage) {
+                hasSentFirstMessage = true;
+            }
+        }
 
+        socket.on("message", (data) => {
+            const chatBox = document.getElementById("chat-box");
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message");
+
+            if (data.username === document.getElementById("username").value) {
+                messageElement.classList.add("my-message");
+            } else {
+                messageElement.classList.add("other-message");
+            }
+
+            messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+
+        socket.on("onlineUsers", (data) => {
+            document.getElementById("online-users").innerText = `Online: ${data.count}`;
+        });
+
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+        }
+
+        function notifyTyping() {
+            socket.emit("typing", document.getElementById("username").value);
+        }
+
+        socket.on("typing", (username) => {
+            document.getElementById("typing").innerText = `${username} is typing...`;
+        });
+
+        socket.on("stopTyping", () => {
+            document.getElementById("typing").innerText = "";
+        });
+    </script>
 
 </body>
 </html>
