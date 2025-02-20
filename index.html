@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Epic Chat App</title>
+    <title>Cool Chat App</title>
     <style>
         * {
             margin: 0;
@@ -17,6 +17,10 @@
             align-items: center;
             height: 100vh;
             background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: background 0.3s ease-in-out;
+        }
+        .dark-mode {
+            background: linear-gradient(135deg, #1e1e1e, #4b4b4b);
         }
         .chat-container {
             width: 400px;
@@ -24,7 +28,11 @@
             border-radius: 10px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
             overflow: hidden;
-            position: relative;
+            transition: 0.3s;
+        }
+        .dark-mode .chat-container {
+            background: #2c2c2c;
+            color: white;
         }
         .chat-header {
             background: #764ba2;
@@ -35,6 +43,7 @@
             font-weight: bold;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
         .chat-box {
             height: 300px;
@@ -43,6 +52,10 @@
             display: flex;
             flex-direction: column;
             background: #f4f4f4;
+            transition: 0.3s;
+        }
+        .dark-mode .chat-box {
+            background: #444;
         }
         .message {
             max-width: 70%;
@@ -50,12 +63,16 @@
             margin: 5px;
             border-radius: 10px;
             word-wrap: break-word;
+            transition: 0.3s;
             display: flex;
             align-items: center;
+            gap: 8px;
         }
         .avatar {
-            font-size: 20px;
-            margin-right: 8px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
         }
         .my-message {
             background: #667eea;
@@ -67,11 +84,19 @@
             color: black;
             align-self: flex-start;
         }
+        .dark-mode .other-message {
+            background: #555;
+            color: white;
+        }
         .chat-input {
             display: flex;
             padding: 10px;
             border-top: 1px solid #ddd;
             background: white;
+            transition: 0.3s;
+        }
+        .dark-mode .chat-input {
+            background: #333;
         }
         .chat-input input {
             flex: 1;
@@ -89,41 +114,10 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        .chat-input button:hover {
-            background: #5a67d8;
-        }
-        .dm-button {
-            background: #5a67d8;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .dm-button:hover {
-            background: #764ba2;
-        }
-        .dark-mode {
-            background: #222;
-            color: white;
-        }
-        .dark-mode .chat-container {
-            background: #333;
-            color: white;
-        }
-        .dark-mode .chat-input input,
-        .dark-mode .chat-input button {
-            background: #444;
-            color: white;
-        }
-        .online-container {
-            padding: 10px;
-            background: #f4f4f4;
-        }
         .typing-indicator {
-            font-size: 14px;
+            font-size: 12px;
             color: gray;
+            margin: 5px;
         }
 
          @media screen and (max-width: 600px) {
@@ -150,9 +144,8 @@
 
     <div class="chat-container">
         <div class="chat-header">
-            Epic Chat App
-            <button class="dm-button" onclick="openDM()">DM</button>
-            <button id="dark-mode-toggle">🌙</button>
+            Cool Chat App
+            <button onclick="toggleDarkMode()">🌙</button>
         </div>
         <div id="chat-box" class="chat-box"></div>
         <div id="typing" class="typing-indicator"></div>
@@ -161,40 +154,22 @@
             <input id="message" placeholder="Type a message..." oninput="notifyTyping()" />
             <button onclick="sendMessage()">Send</button>
         </div>
-        <div class="chat-input">
-            <button onclick="chooseAvatar()">Choose Avatar</button>
-            <span id="selected-avatar" class="avatar">😀</span>
-        </div>
-        <div class="online-container">
-            <h3>Online Users</h3>
-            <ul id="online-users"></ul>
-        </div>
     </div>
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         const socket = io("https://chat-app-ydcu.onrender.com");
-
-        let avatar = localStorage.getItem("chat-avatar") || "😀";
-        document.getElementById("selected-avatar").textContent = avatar;
-
-        function chooseAvatar() {
-            const emojiPicker = prompt("Choose an emoji for your avatar (e.g., 😎, 😂, 🤩)");
-            if (emojiPicker) {
-                avatar = emojiPicker;
-                localStorage.setItem("chat-avatar", avatar);
-                document.getElementById("selected-avatar").textContent = avatar;
-            }
-        }
+        let isTyping = false;
+        let timeout;
 
         function sendMessage() {
             const message = document.getElementById("message").value;
             const username = document.getElementById("username").value || "Anonymous";
+            const avatar = "https://i.pravatar.cc/30"; // Random avatar
 
             if (message.trim() !== "") {
                 socket.emit("message", { username, message, avatar });
                 document.getElementById("message").value = "";
-                socket.emit("stopTyping");
             }
         }
 
@@ -203,44 +178,44 @@
             const messageElement = document.createElement("div");
             messageElement.classList.add("message");
 
+            const avatarElement = document.createElement("img");
+            avatarElement.src = data.avatar;
+            avatarElement.classList.add("avatar");
+
             if (data.username === document.getElementById("username").value) {
                 messageElement.classList.add("my-message");
             } else {
                 messageElement.classList.add("other-message");
             }
 
-            messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> ${data.username}: ${data.message}`;
+            messageElement.innerHTML = `<img src="${data.avatar}" class="avatar"> <span>${data.username}: ${data.message}</span>`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        function notifyTyping() {
-            socket.emit("typing", document.getElementById("username").value || "Someone");
-        }
-
-        socket.on("typing", (user) => {
-            document.getElementById("typing").textContent = `${user} is typing...`;
-            setTimeout(() => {
-                document.getElementById("typing").textContent = "";
-            }, 2000);
-        });
-
-        socket.on("onlineUsers", (users) => {
-            document.getElementById("online-users").innerHTML = users.map(user => `<li>${user}</li>`).join("");
-        });
-
-        document.getElementById("dark-mode-toggle").addEventListener("click", () => {
+        function toggleDarkMode() {
             document.body.classList.toggle("dark-mode");
-            localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+        }
+
+        function notifyTyping() {
+            if (!isTyping) {
+                socket.emit("typing", document.getElementById("username").value);
+                isTyping = true;
+            }
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                isTyping = false;
+                socket.emit("stopTyping");
+            }, 1000);
+        }
+
+        socket.on("typing", (username) => {
+            document.getElementById("typing").innerText = `${username} is typing...`;
         });
 
-        if (localStorage.getItem("theme") === "dark") {
-            document.body.classList.add("dark-mode");
-        }
-
-        function openDM() {
-            alert("DM feature coming soon!");
-        }
+        socket.on("stopTyping", () => {
+            document.getElementById("typing").innerText = "";
+        });
     </script>
 
 </body>
