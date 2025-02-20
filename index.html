@@ -29,6 +29,11 @@
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
             overflow: hidden;
             transition: 0.3s;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .dark-mode .chat-container {
             background: #2c2c2c;
@@ -67,6 +72,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            animation: slideIn 0.3s ease-in-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
         }
         .avatar {
             width: 30px;
@@ -98,7 +108,7 @@
         .dark-mode .chat-input {
             background: #333;
         }
-        .chat-input input {
+        .chat-input input, .chat-input select {
             flex: 1;
             padding: 10px;
             border: 1px solid #ddd;
@@ -119,40 +129,53 @@
             color: gray;
             margin: 5px;
         }
-
-         @media screen and (max-width: 600px) {
-    .chat-input {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .chat-input input {
-        width: 100%;
-        margin-bottom: 5px;
-    }
-
-    .chat-input button {
-        width: 100%;
-        margin-left: 0; /* Remove left margin */
-        padding: 12px;
-        font-size: 16px;
-    }
-}
+        .online-users {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        @media screen and (max-width: 600px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+            .chat-input {
+                flex-direction: column;
+            }
+            .chat-input input, .chat-input button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
     </style>
 </head>
 <body>
-
     <div class="chat-container">
         <div class="chat-header">
             Cool Chat App
             <button onclick="toggleDarkMode()">🌙</button>
+            <button onclick="goToDM()">💬 DM</button>
         </div>
         <div id="chat-box" class="chat-box"></div>
         <div id="typing" class="typing-indicator"></div>
         <div class="chat-input">
             <input id="username" placeholder="Your Name" />
+            <select id="emoji-select">
+                <option value="😀">😀</option>
+                <option value="😎">😎</option>
+                <option value="🤖">🤖</option>
+                <option value="👻">👻</option>
+                <option value="🐱">🐱</option>
+            </select>
             <input id="message" placeholder="Type a message..." oninput="notifyTyping()" />
             <button onclick="sendMessage()">Send</button>
+        </div>
+        <div class="online-users">
+            <h3>Online Users</h3>
+            <ul id="online-users-list"></ul>
         </div>
     </div>
 
@@ -161,11 +184,19 @@
         const socket = io("https://chat-app-ydcu.onrender.com");
         let isTyping = false;
         let timeout;
+        let selectedEmoji = localStorage.getItem("selectedEmoji") || "😀";
+
+        document.getElementById("emoji-select").value = selectedEmoji;
+
+        document.getElementById("emoji-select").addEventListener("change", (e) => {
+            selectedEmoji = e.target.value;
+            localStorage.setItem("selectedEmoji", selectedEmoji);
+        });
 
         function sendMessage() {
             const message = document.getElementById("message").value;
             const username = document.getElementById("username").value || "Anonymous";
-            const avatar = "https://i.pravatar.cc/30"; // Random avatar
+            const avatar = selectedEmoji;
 
             if (message.trim() !== "") {
                 socket.emit("message", { username, message, avatar });
@@ -178,17 +209,13 @@
             const messageElement = document.createElement("div");
             messageElement.classList.add("message");
 
-            const avatarElement = document.createElement("img");
-            avatarElement.src = data.avatar;
-            avatarElement.classList.add("avatar");
-
             if (data.username === document.getElementById("username").value) {
                 messageElement.classList.add("my-message");
             } else {
                 messageElement.classList.add("other-message");
             }
 
-            messageElement.innerHTML = `<img src="${data.avatar}" class="avatar"> <span>${data.username}: ${data.message}</span>`;
+            messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
         });
@@ -216,7 +243,15 @@
         socket.on("stopTyping", () => {
             document.getElementById("typing").innerText = "";
         });
-    </script>
 
+        socket.on("onlineUsers", (users) => {
+            const onlineUsersList = document.getElementById("online-users-list");
+            onlineUsersList.innerHTML = users.map(user => `<li>${user}</li>`).join("");
+        });
+
+        function goToDM() {
+            window.location.href = "dm.html";
+        }
+    </script>
 </body>
 </html>
