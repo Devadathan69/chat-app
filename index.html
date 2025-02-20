@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatSphere</title>
+    <title>Epic Chat App</title>
     <style>
         * {
             margin: 0;
@@ -17,11 +17,6 @@
             align-items: center;
             height: 100vh;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            transition: background 0.3s ease;
-        }
-        body.dark-mode {
-            background: linear-gradient(135deg, #1e1e1e, #444);
-            color: white;
         }
         .chat-container {
             width: 400px;
@@ -29,10 +24,7 @@
             border-radius: 10px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
             overflow: hidden;
-            transition: background 0.3s ease;
-        }
-        body.dark-mode .chat-container {
-            background: #2b2b2b;
+            position: relative;
         }
         .chat-header {
             background: #764ba2;
@@ -43,11 +35,6 @@
             font-weight: bold;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-        }
-        .toggle-dark-mode {
-            cursor: pointer;
-            font-size: 16px;
         }
         .chat-box {
             height: 300px;
@@ -56,9 +43,6 @@
             display: flex;
             flex-direction: column;
             background: #f4f4f4;
-        }
-        body.dark-mode .chat-box {
-            background: #3b3b3b;
         }
         .message {
             max-width: 70%;
@@ -72,6 +56,16 @@
         .avatar {
             font-size: 20px;
             margin-right: 8px;
+        }
+        .my-message {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+        }
+        .other-message {
+            background: #e0e0e0;
+            color: black;
+            align-self: flex-start;
         }
         .chat-input {
             display: flex;
@@ -95,27 +89,43 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        .chat-input button:hover {
+            background: #5a67d8;
+        }
         .dm-button {
-            background: #ff9800;
+            background: #5a67d8;
             color: white;
             border: none;
-            padding: 10px 15px;
+            padding: 10px;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 5px;
-            width: 100%;
+            transition: 0.3s;
         }
-        .emoji-picker {
-            display: flex;
-            overflow-x: auto;
-            padding: 5px;
-            background: #ddd;
+        .dm-button:hover {
+            background: #764ba2;
         }
-        .emoji-picker span {
-            cursor: pointer;
-            font-size: 20px;
-            margin-right: 5px;
+        .dark-mode {
+            background: #222;
+            color: white;
         }
+        .dark-mode .chat-container {
+            background: #333;
+            color: white;
+        }
+        .dark-mode .chat-input input,
+        .dark-mode .chat-input button {
+            background: #444;
+            color: white;
+        }
+        .online-container {
+            padding: 10px;
+            background: #f4f4f4;
+        }
+        .typing-indicator {
+            font-size: 14px;
+            color: gray;
+        }
+
          @media screen and (max-width: 600px) {
     .chat-input {
         flex-direction: column;
@@ -140,39 +150,41 @@
 
     <div class="chat-container">
         <div class="chat-header">
-            ChatSphere
-            <span class="toggle-dark-mode" onclick="toggleDarkMode()">🌙</span>
+            Epic Chat App
+            <button class="dm-button" onclick="openDM()">DM</button>
+            <button id="dark-mode-toggle">🌙</button>
         </div>
-        <button class="dm-button" onclick="goToDM()">Direct Messages</button>
         <div id="chat-box" class="chat-box"></div>
+        <div id="typing" class="typing-indicator"></div>
         <div class="chat-input">
             <input id="username" placeholder="Your Name" />
-            <input id="message" placeholder="Type a message..." />
+            <input id="message" placeholder="Type a message..." oninput="notifyTyping()" />
             <button onclick="sendMessage()">Send</button>
         </div>
         <div class="chat-input">
-            <div class="emoji-picker">
-                <span onclick="setAvatar('😀')">😀</span>
-                <span onclick="setAvatar('😂')">😂</span>
-                <span onclick="setAvatar('😎')">😎</span>
-                <span onclick="setAvatar('😍')">😍</span>
-                <span onclick="setAvatar('😜')">😜</span>
-            </div>
+            <button onclick="chooseAvatar()">Choose Avatar</button>
             <span id="selected-avatar" class="avatar">😀</span>
+        </div>
+        <div class="online-container">
+            <h3>Online Users</h3>
+            <ul id="online-users"></ul>
         </div>
     </div>
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         const socket = io("https://chat-app-ydcu.onrender.com");
-        
+
         let avatar = localStorage.getItem("chat-avatar") || "😀";
         document.getElementById("selected-avatar").textContent = avatar;
 
-        function setAvatar(emoji) {
-            avatar = emoji;
-            localStorage.setItem("chat-avatar", avatar);
-            document.getElementById("selected-avatar").textContent = avatar;
+        function chooseAvatar() {
+            const emojiPicker = prompt("Choose an emoji for your avatar (e.g., 😎, 😂, 🤩)");
+            if (emojiPicker) {
+                avatar = emojiPicker;
+                localStorage.setItem("chat-avatar", avatar);
+                document.getElementById("selected-avatar").textContent = avatar;
+            }
         }
 
         function sendMessage() {
@@ -182,6 +194,7 @@
             if (message.trim() !== "") {
                 socket.emit("message", { username, message, avatar });
                 document.getElementById("message").value = "";
+                socket.emit("stopTyping");
             }
         }
 
@@ -189,18 +202,46 @@
             const chatBox = document.getElementById("chat-box");
             const messageElement = document.createElement("div");
             messageElement.classList.add("message");
+
+            if (data.username === document.getElementById("username").value) {
+                messageElement.classList.add("my-message");
+            } else {
+                messageElement.classList.add("other-message");
+            }
+
             messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> ${data.username}: ${data.message}`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        function toggleDarkMode() {
-            document.body.classList.toggle("dark-mode");
+        function notifyTyping() {
+            socket.emit("typing", document.getElementById("username").value || "Someone");
         }
 
-        function goToDM() {
-            window.location.href = "dm.html";
+        socket.on("typing", (user) => {
+            document.getElementById("typing").textContent = `${user} is typing...`;
+            setTimeout(() => {
+                document.getElementById("typing").textContent = "";
+            }, 2000);
+        });
+
+        socket.on("onlineUsers", (users) => {
+            document.getElementById("online-users").innerHTML = users.map(user => `<li>${user}</li>`).join("");
+        });
+
+        document.getElementById("dark-mode-toggle").addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+        });
+
+        if (localStorage.getItem("theme") === "dark") {
+            document.body.classList.add("dark-mode");
+        }
+
+        function openDM() {
+            alert("DM feature coming soon!");
         }
     </script>
+
 </body>
 </html>
