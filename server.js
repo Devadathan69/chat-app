@@ -22,24 +22,28 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+const io = require("socket.io")(server, {
+    cors: { origin: "*" },
+});
+
+let onlineUsers = [];
+
 io.on("connection", (socket) => {
     console.log("A user connected:", socket.id);
 
-    // Store online users
-    socket.on("register", (username) => {
-        socket.username = username;
+    socket.on("message", (data) => {
+        io.emit("message", data); // Broadcast message to all clients
     });
 
-    // Private Messaging
-    socket.on("privateMessage", (data) => {
-        const { to, message } = data;
-        io.to(to).emit("privateMessage", { from: socket.username, message });
+    socket.on("typing", (username) => {
+        socket.broadcast.emit("typing", username);
     });
 
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
     });
 });
+
 
 
 // Start the server
