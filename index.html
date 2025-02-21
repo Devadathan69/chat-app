@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -66,6 +67,34 @@
         .dark-mode .chat-box {
             background: #444;
         }
+        .message {
+            max-width: 70%;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 10px;
+            word-wrap: break-word;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .avatar {
+            font-size: 24px;
+        }
+        .my-message {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+        }
+        .other-message {
+            background: #e0e0e0;
+            color: black;
+            align-self: flex-start;
+        }
+        .dark-mode .other-message {
+            background: #555;
+            color: white;
+        }
         .chat-input {
             display: flex;
             flex-wrap: wrap;
@@ -78,16 +107,12 @@
         .dark-mode .chat-input {
             background: #333;
         }
-        .chat-input input, .chat-input select, .chat-input button {
+        .chat-input input, .chat-input select {
             flex: 1;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             outline: none;
-        }
-        .send-section {
-            display: none; /* Initially hidden */
-            width: 100%;
         }
         .chat-input button {
             background: #667eea;
@@ -96,6 +121,7 @@
             padding: 10px;
             border-radius: 5px;
             cursor: pointer;
+            flex: 1;
         }
         .chat-input button:hover {
             background: #5a6edc;
@@ -144,12 +170,8 @@
                 <option value="🐱">🐱</option>
             </select>
             <button id="set-name-btn" onclick="setUsername()">Set Name</button>
-
-            <!-- Send Message Section (Initially Hidden) -->
-            <div id="send-section" class="send-section">
-                <input id="message" placeholder="Type a message..." oninput="notifyTyping()" />
-                <button onclick="sendMessage()">Send</button>
-            </div>
+            <input id="message" placeholder="Type a message..." oninput="notifyTyping()" disabled />
+            <button onclick="sendMessage()" disabled>Send</button>
         </div>
     </div>
 
@@ -167,13 +189,12 @@
             
             socket.emit("setUsername", username);
             
-            // Hide name input and set name button
+            document.getElementById("message").disabled = false;
+            document.querySelector(".chat-input button:last-child").disabled = false;
+
             document.getElementById("username").classList.add("hidden");
             document.getElementById("emoji-select").classList.add("hidden");
             document.getElementById("set-name-btn").classList.add("hidden");
-
-            // Show message input and send button
-            document.getElementById("send-section").style.display = "flex";
         }
 
         function sendMessage() {
