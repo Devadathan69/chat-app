@@ -67,6 +67,12 @@
             margin: 5px;
             border-radius: 10px;
             word-wrap: break-word;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .avatar {
+            font-size: 24px;
         }
         .my-message {
             background: #667eea;
@@ -93,7 +99,7 @@
         .dark-mode .chat-input {
             background: #333;
         }
-        .chat-input input {
+        .chat-input input, .chat-input select {
             flex: 1;
             padding: 10px;
             border: 1px solid #ddd;
@@ -148,6 +154,13 @@
         <!-- Set Name Section -->
         <div class="chat-input" id="set-name-container">
             <input id="username" placeholder="Enter your name..." />
+            <select id="emoji-select">
+                <option value="😀">😀</option>
+                <option value="😎">😎</option>
+                <option value="🤖">🤖</option>
+                <option value="👻">👻</option>
+                <option value="🐱">🐱</option>
+            </select>
             <button onclick="setUsername()">Set Name</button>
         </div>
 
@@ -165,26 +178,28 @@
     <script>
         const socket = io("https://chat-app-ydcu.onrender.com");
         let hasSetUsername = false;
+        let selectedEmoji = "😀";
+
+        document.getElementById("emoji-select").addEventListener("change", (e) => {
+            selectedEmoji = e.target.value;
+        });
 
         function setUsername() {
             const username = document.getElementById("username").value.trim();
             if (!username) return;
             
-            socket.emit("setUsername", username);
+            socket.emit("setUsername", { username, avatar: selectedEmoji });
             hasSetUsername = true;
             
-            // Hide name input, show chat input
             document.getElementById("set-name-container").classList.add("hidden");
             document.getElementById("chat-input-container").classList.remove("hidden");
         }
 
         function sendMessage() {
             const message = document.getElementById("message").value.trim();
-            const username = document.getElementById("username").value.trim();
-            
-            if (!username || !message) return;
+            if (!hasSetUsername || !message) return;
 
-            socket.emit("message", { username, message });
+            socket.emit("message", { message });
             document.getElementById("message").value = "";
         }
 
@@ -199,14 +214,14 @@
                 messageElement.classList.add("other-message");
             }
 
-            messageElement.innerHTML = `<span>${data.username}: ${data.message}</span>`;
+            messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
         socket.on("onlineUsers", (users) => {
             document.getElementById("online-users").innerText = `Online: ${users.length}`;
-            let userList = users.map(user => `<div>${user}</div>`).join("");
+            let userList = users.map(user => `<div>${user.avatar} ${user.username}</div>`).join("");
             document.getElementById("online-user-list").innerHTML = userList;
         });
 
