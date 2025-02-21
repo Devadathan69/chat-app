@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -49,6 +48,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
         }
         .chat-header span {
             font-size: 14px;
@@ -134,7 +134,21 @@
         .hidden {
             display: none;
         }
-
+        .online-users {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            max-width: 150px;
+        }
+        .dark-mode .online-users {
+            background: #333;
+            color: white;
+        }
         @media screen and (max-width: 600px) {
             .chat-container {
                 height: 100vh;
@@ -156,6 +170,7 @@
         <div class="chat-header">
             Gabble
             <span id="online-users">Online: 0</span>
+            <button onclick="toggleUserList()">👥</button>
             <button onclick="toggleDarkMode()">🌙</button>
         </div>
         <div id="chat-box" class="chat-box"></div>
@@ -175,11 +190,13 @@
         </div>
     </div>
 
+    <!-- Online Users List -->
+    <div class="online-users hidden" id="online-user-list"></div>
+
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         const socket = io("https://chat-app-ydcu.onrender.com");
         let isTyping = false;
-        let timeout;
         let selectedEmoji = "😀"; 
         let hasSentFirstMessage = false;
 
@@ -226,25 +243,19 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        socket.on("onlineUsers", (data) => {
-            document.getElementById("online-users").innerText = `Online: ${data.count}`;
+        socket.on("onlineUsers", (users) => {
+            document.getElementById("online-users").innerText = `Online: ${users.length}`;
+            let userList = users.map(user => `<div>${user.avatar} ${user.username}</div>`).join("");
+            document.getElementById("online-user-list").innerHTML = userList;
         });
+
+        function toggleUserList() {
+            document.getElementById("online-user-list").classList.toggle("hidden");
+        }
 
         function toggleDarkMode() {
             document.body.classList.toggle("dark-mode");
         }
-
-        function notifyTyping() {
-            socket.emit("typing", document.getElementById("username").value);
-        }
-
-        socket.on("typing", (username) => {
-            document.getElementById("typing").innerText = `${username} is typing...`;
-        });
-
-        socket.on("stopTyping", () => {
-            document.getElementById("typing").innerText = "";
-        });
     </script>
 
 </body>
