@@ -2,91 +2,64 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-const shortid = require("shortid");
 
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
-// Configure CORS properly
 const io = new Server(server, {
-  cors: {
-    origin: "*", // For now, allow all origins
-    methods: ["GET", "POST"]
-  }
+    cors: { origin: "*" },
 });
 
-app.use(cors());
+let messages = [];
+let onlineUsers = new Map();
 
-// Data storage
-const users = new Map(); // socket.id → user data
-const messages = []; // All messages
+// Function to update online users
+function updateOnlineUsers() {
+    io.emit("onlineUsers", { users: Array.from(onlineUsers.values()), count: onlineUsers.size });
+}
 
-// Helper functions
-const getOnlineUsers = () => Array.from(users.values()).filter(user => user.online);
-
+// When a user connects
 io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
+    console.log(`User connected: ${socket.id}`);
 
-  // Send initial data
-  socket.emit("chatHistory", messages.slice(-50));
-  socket.emit("onlineUsers", {
-    users: getOnlineUsers(),
-    count: getOnlineUsers().length
-  });
+    socket.emit("chatHistory", messages);
 
-  // Set username handler - fixed
-  socket.on("setUsername", ({ username, avatar }) => {
-    if (username && username.trim()) {
-      users.set(socket.id, {
-        id: socket.id,
-        username: username.trim(),
-        avatar: avatar || "👤",
-        online: true,
-        lastSeen: new Date()
-      });
+    // Listen for username setup
+    socket.on("setUsername", (username) => {
+        if (username.trim() !== "") {
+            onlineUsers.set(socket.id, username);
+            console.log(`User set name: ${username}`);
+            updateOnlineUsers();
+        }
+    });
 
-      io.emit("onlineUsers", {
-        users: getOnlineUsers(),
-        count: getOnlineUsers().length
-      });
+    // Listen for messages
+    socket.on("message", (data) => {
+        if (data.username && data.message.trim() !== "") {
+            messages.push(data);
+            io.emit("message", data);
+        }
+    });
 
-      socket.emit("usernameSet", { success: true });
-    }
-  });
+    // Listen for typing
+    socket.on("typing", (username) => {
+        socket.broadcast.emit("typing", username);
+    });
 
-  // Message handler - fixed
-  socket.on("message", (data) => {
-    const user = users.get(socket.id);
-    if (!user || !data.message?.trim()) return;
+    socket.on("stopTyping", () => {
+        socket.broadcast.emit("stopTyping");
+    });
 
-    const message = {
-      id: shortid.generate(),
-      username: user.username,
-      avatar: user.avatar,
-      message: data.message.trim(),
-      timestamp: new Date().toISOString(),
-      sender: socket.id
-    };
-
-    messages.push(message);
-    io.emit("message", message);
-  });
-
-  // Disconnection handler
-  socket.on("disconnect", () => {
-    const user = users.get(socket.id);
-    if (user) {
-      user.online = false;
-      user.lastSeen = new Date();
-      io.emit("onlineUsers", {
-        users: getOnlineUsers(),
-        count: getOnlineUsers().length
-      });
-    }
-  });
+    // When a user disconnects
+    socket.on("disconnect", () => {
+        console.log(`User disconnected: ${socket.id}`);
+        onlineUsers.delete(socket.id);
+        updateOnlineUsers();
+    });
 });
 
+// Start the server
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
