@@ -620,15 +620,28 @@
                 socket.emit("stopTyping");
             }, 2000);
         }
-        const io = new Server(server, {
-  cors: {
-    origin: [
-      "https://your-netlify-site.netlify.app",
-      "http://localhost:3000" // for local testing
-    ],
-    methods: ["GET", "POST"],
-    credentials: true
-  },
+ // Frontend connection code
+const socket = io("https://your-render-app.onrender.com", {
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+});
+
+// Connection status indicators
+socket.on("connect", () => {
+  console.log("Connected to server");
+  document.getElementById("connection-status").textContent = "Online";
+  document.getElementById("connection-status").style.color = "green";
+});
+
+socket.on("disconnect", () => {
+  console.log("Disconnected from server");
+  document.getElementById("connection-status").textContent = "Offline";
+  document.getElementById("connection-status").style.color = "red";
+});
+
+socket.on("connect_error", (err) => {
+  console.log("Connection error:", err);
 });
 
         socket.on("typing", (username) => {
