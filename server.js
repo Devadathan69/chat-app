@@ -155,6 +155,17 @@ io.on("connection", (socket) => {
   });
 });
 
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "https://gabbly.netlify.app",
+      "http://localhost:3000" // for local testing
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({
