@@ -620,6 +620,16 @@
                 socket.emit("stopTyping");
             }, 2000);
         }
+        const io = new Server(server, {
+  cors: {
+    origin: [
+      "https://your-netlify-site.netlify.app",
+      "http://localhost:3000" // for local testing
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+});
 
         socket.on("typing", (username) => {
             const typingElement = document.getElementById("typing");
