@@ -2,70 +2,87 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: "*" }));
-
-const io = new Server(server, {
-  cors: { origin: "*" },
+// Configure multer for file uploads
+const upload = multer({ 
+    dest: 'uploads/',
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-/**
- * In-memory store:
- *  Each message is:
- *   { username, type: "text"|"file"|"audio", text?, fileName?, mime?, dataURL?, time }
- * This is volatile (no DB) and resets on restart as requested.
- */
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+app.use(cors());
+
+const io = new Server(server, {
+    cors: { origin: "*" },
+});
+
 let messages = [];
 let onlineUsers = new Map();
 
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
-  // Send history to the new client
-  socket.emit("chatHistory", messages);
-
-  // Track online users
-  socket.on("setUsername", (username) => {
-    onlineUsers.set(socket.id, username || "Anonymous");
-    io.emit("onlineUsers", Array.from(onlineUsers.values()));
-  });
-
-  // Handle incoming messages of any supported type
-  socket.on("message", (data) => {
-    const safe = {
-      username: (data && data.username) || "Anonymous",
-      type: data?.type || "text",
-      text: data?.text || "",
-      fileName: data?.fileName || "",
-      mime: data?.mime || "",
-      dataURL: data?.dataURL || "",
-      time: data?.time || Date.now(),
-    };
-    messages.push(safe);
-    // Limit history to last 500 messages to avoid memory bloat on free hosts
-    if (messages.length > 500) messages = messages.slice(-500);
-    io.emit("message", safe);
-  });
-
-  // Typing indicators
-  socket.on("typing", (username) => {
-    socket.broadcast.emit("typing", username || "Someone");
-  });
-  socket.on("stopTyping", () => {
-    socket.broadcast.emit("stopTyping");
-  });
-
-  // Disconnect
-  socket.on("disconnect", () => {
-    onlineUsers.delete(socket.id);
-    io.emit("onlineUsers", Array.from(onlineUsers.values()));
-  });
+// Handle file upload endpoint
+app.post("/upload", upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).send("No file uploaded");
+    }
+    res.json({ 
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        path: `/uploads/${req.file.filename}`
+    });
 });
 
+io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
+
+    socket.emit("chatHistory", messages);
+
+    socket.on("setUsername", (username) => {
+        onlineUsers.set(socket.id, username);
+        io.emit("onlineUsers", Array.from(onlineUsers.values()));
+    });
+
+    socket.on("message", (data) => {
+        messages.push(data);
+        io.emit("message", data);
+    });
+
+    socket.on("typing", (username) => {
+        socket.broadcast.emit("typing", username);
+    });
+
+    socket.on("stopTyping", () => {
+        socket.broadcast.emit("stopTyping");
+    });
+
+    socket.on("voiceMessage", (data) => {
+        messages.push(data);
+        io.emit("voiceMessage", data);
+    });
+
+    socket.on("fileMessage", (data) => {
+        messages.push(data);
+        io.emit("fileMessage", data);
+    });
+
+    socket.on("disconnect", () => {
+        onlineUsers.delete(socket.id);
+        io.emit("onlineUsers", Array.from(onlineUsers.values()));
+    });
+});
+
+// Clean up uploads directory on server start
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
+}
+
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
