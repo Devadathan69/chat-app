@@ -1,252 +1,178 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gabble</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
-        }
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            transition: background 0.3s ease-in-out;
-        }
-        .dark-mode {
-            background: linear-gradient(135deg, #1e1e1e, #4b4b4b);
-        }
-        .chat-container {
-            width: 90%;
-            max-width: 400px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            transition: 0.3s;
-            display: flex;
-            flex-direction: column;
-            height: 90vh;
-        }
-        .dark-mode .chat-container {
-            background: #2c2c2c;
-            color: white;
-        }
-        .chat-header {
-            background: #764ba2;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .chat-header span {
-            font-size: 14px;
-        }
-        .chat-box {
-            flex: 1;
-            height: calc(100% - 120px);
-            overflow-y: auto;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            background: #f4f4f4;
-            transition: 0.3s;
-            scrollbar-width: thin;
-        }
-        .dark-mode .chat-box {
-            background: #444;
-        }
-        .message {
-            max-width: 70%;
-            padding: 10px;
-            margin: 5px;
-            border-radius: 10px;
-            word-wrap: break-word;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .avatar {
-            font-size: 24px;
-        }
-        .my-message {
-            background: #667eea;
-            color: white;
-            align-self: flex-end;
-        }
-        .other-message {
-            background: #e0e0e0;
-            color: black;
-            align-self: flex-start;
-        }
-        .dark-mode .other-message {
-            background: #555;
-            color: white;
-        }
-        .chat-input {
-            display: flex;
-            flex-wrap: wrap;
-            padding: 10px;
-            border-top: 1px solid #ddd;
-            background: white;
-            transition: 0.3s;
-            gap: 5px;
-        }
-        .dark-mode .chat-input {
-            background: #333;
-        }
-        .chat-input input, .chat-input select {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            outline: none;
-        }
-        .chat-input button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            flex: 1;
-        }
-        .chat-input button:hover {
-            background: #5a6edc;
-        }
-        .typing-indicator {
-            font-size: 12px;
-            color: gray;
-            margin: 5px;
-        }
-        .hidden {
-            display: none;
-        }
-
-        @media screen and (max-width: 600px) {
-            .chat-container {
-                height: 100vh;
-                width: 100%;
-                border-radius: 0;
-            }
-            .chat-input {
-                flex-direction: column;
-            }
-            .chat-input input, .chat-input select, .chat-input button {
-                width: 100%;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gabble</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Arial', sans-serif; }
+    body {
+      display:flex; justify-content:center; align-items:center;
+      height:100vh; background:linear-gradient(135deg,#667eea,#764ba2);
+      transition:background 0.3s;
+    }
+    .dark-mode { background:linear-gradient(135deg,#1e1e1e,#4b4b4b); }
+    .chat-container {
+      width:95%; max-width:900px; height:90vh;
+      background:white; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.2);
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    .dark-mode .chat-container { background:#2c2c2c; color:white; }
+    .chat-header {
+      background:#764ba2; color:white; padding:10px;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .chat-box {
+      flex:1; padding:10px; overflow-y:auto;
+      display:flex; flex-direction:column; background:#f4f4f4;
+    }
+    .dark-mode .chat-box { background:#444; }
+    .message {
+      max-width:70%; padding:10px; margin:5px; border-radius:10px;
+      word-wrap:break-word; display:flex; align-items:flex-start; gap:8px;
+      white-space:pre-wrap;
+    }
+    .avatar { font-size:22px; }
+    .my-message { background:#667eea; color:white; align-self:flex-end; }
+    .other-message { background:#e0e0e0; color:black; align-self:flex-start; }
+    .dark-mode .other-message { background:#555; color:white; }
+    .chat-input {
+      border-top:1px solid #ddd; padding:8px; background:white;
+      display:flex; flex-wrap:wrap; gap:5px; align-items:center;
+    }
+    .dark-mode .chat-input { background:#333; }
+    .chat-input input[type="text"] {
+      flex:1; padding:10px; border:1px solid #ddd; border-radius:5px;
+    }
+    .chat-input button, .chat-input label {
+      background:#667eea; color:white; border:none; padding:8px 12px;
+      border-radius:5px; cursor:pointer;
+    }
+    .chat-input button:hover, .chat-input label:hover { background:#5a6edc; }
+    .typing-indicator { font-size:12px; color:gray; margin:3px 10px; }
+    .hidden { display:none; }
+    .message img { max-width:100%; border-radius:6px; }
+    audio { margin-top:5px; max-width:100%; }
+    @media (max-width:600px){ .chat-container{ width:100%; height:100vh; border-radius:0; } }
+  </style>
 </head>
 <body>
-
-    <div class="chat-container">
-        <div class="chat-header">
-            Gabble
-            <span id="online-users">Online: 0</span>
-            <button onclick="toggleDarkMode()">🌙</button>
-        </div>
-        <div id="chat-box" class="chat-box"></div>
-        <div id="typing" class="typing-indicator"></div>
-        <div class="chat-input">
-            <input id="username" placeholder="Your Name" />
-            <select id="emoji-select">
-                <option value="😀">😀</option>
-                <option value="😎">😎</option>
-                <option value="🤖">🤖</option>
-                <option value="👻">👻</option>
-                <option value="🐱">🐱</option>
-            </select>
-            <button id="set-name-btn" onclick="setUsername()">Set Name</button>
-            <input id="message" placeholder="Type a message..." oninput="notifyTyping()" disabled />
-            <button onclick="sendMessage()" disabled>Send</button>
-        </div>
+  <div class="chat-container">
+    <div class="chat-header">
+      Gabble
+      <span id="online-users">Online: 0</span>
+      <button onclick="toggleDarkMode()">🌙</button>
     </div>
+    <div id="chat-box" class="chat-box"></div>
+    <div id="typing" class="typing-indicator"></div>
+    <div class="chat-input">
+      <input id="username" placeholder="Your Name"/>
+      <select id="emoji-select">
+        <option value="😀">😀</option><option value="😎">😎</option>
+        <option value="🤖">🤖</option><option value="👻">👻</option>
+        <option value="🐱">🐱</option>
+      </select>
+      <button id="set-name-btn" onclick="setUsername()">Set</button>
+      <input id="message" placeholder="Type..." disabled/>
+      <button onclick="sendMessage()" disabled>Send</button>
+      <label for="fileInput">📎</label>
+      <input type="file" id="fileInput" hidden multiple/>
+      <button id="micBtn">🎤</button>
+    </div>
+  </div>
 
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <script>
-        const socket = io("https://chat-app-ydcu.onrender.com");
-        let isTyping = false;
-        let timeout;
-        let selectedEmoji = "😀"; 
-        let hasSentFirstMessage = false;
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script>
+    const socket = io("https://chat-app-ydcu.onrender.com");
+    let selectedEmoji="😀", username="", isRecording=false, mediaRecorder, chunks=[];
 
-        function setUsername() {
-            const username = document.getElementById("username").value.trim();
-            if (!username) return;
-            
-            socket.emit("setUsername", username);
-            
-            document.getElementById("message").disabled = false;
-            document.querySelector(".chat-input button:last-child").disabled = false;
+    function setUsername(){
+      username=document.getElementById("username").value.trim();
+      if(!username) return;
+      socket.emit("setUsername",username);
+      document.getElementById("message").disabled=false;
+      document.querySelector(".chat-input button:nth-of-type(2)").disabled=false;
+      document.getElementById("username").classList.add("hidden");
+      document.getElementById("emoji-select").classList.add("hidden");
+      document.getElementById("set-name-btn").classList.add("hidden");
+    }
 
-            document.getElementById("username").classList.add("hidden");
-            document.getElementById("emoji-select").classList.add("hidden");
-            document.getElementById("set-name-btn").classList.add("hidden");
+    function sendMessage(){
+      const text=document.getElementById("message").value.trim();
+      if(!text) return;
+      socket.emit("message",{username,message:text,avatar:selectedEmoji,type:"text"});
+      document.getElementById("message").value="";
+    }
+
+    document.getElementById("message").addEventListener("keydown",e=>{
+      if(e.key==="Enter"&&!e.shiftKey){
+        e.preventDefault(); sendMessage();
+      }
+    });
+
+    // Display messages
+    socket.on("message",data=>{
+      const box=document.getElementById("chat-box");
+      const msg=document.createElement("div");
+      msg.classList.add("message");
+      if(data.username===username) msg.classList.add("my-message");
+      else msg.classList.add("other-message");
+
+      if(data.type==="file"){
+        let content="";
+        if(data.mime.startsWith("image/")){
+          content=`<img src="${data.dataURL}" alt="${data.fileName}"/>`;
+        }else if(data.mime.startsWith("audio/")){
+          content=`<audio controls src="${data.dataURL}"></audio>`;
+        }else{
+          content=`<a href="${data.dataURL}" download="${data.fileName}">📎 ${data.fileName}</a>`;
         }
+        msg.innerHTML=`<span class="avatar">${data.avatar}</span><div>${data.username}: ${content}</div>`;
+      } else if(data.type==="audio"){
+        msg.innerHTML=`<span class="avatar">${data.avatar}</span><div>${data.username}:<br><audio controls src="${data.dataURL}"></audio></div>`;
+      } else {
+        msg.innerHTML=`<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
+      }
+      box.appendChild(msg); box.scrollTop=box.scrollHeight;
+    });
 
-        function sendMessage() {
-            const message = document.getElementById("message").value.trim();
-            const username = document.getElementById("username").value.trim();
-            if (!username || !message) return;
+    socket.on("onlineUsers",data=>{
+      document.getElementById("online-users").innerText=`Online: ${data.count||data.length}`;
+    });
 
-            socket.emit("message", { username, message, avatar: selectedEmoji });
-            document.getElementById("message").value = "";
+    function toggleDarkMode(){ document.body.classList.toggle("dark-mode"); }
+    function notifyTyping(){ socket.emit("typing",username); }
+    socket.on("typing",u=>{document.getElementById("typing").innerText=`${u} is typing...`;});
+    socket.on("stopTyping",()=>{document.getElementById("typing").innerText="";});
 
-            if (!hasSentFirstMessage) {
-                hasSentFirstMessage = true;
-            }
-        }
-
-        socket.on("message", (data) => {
-            const chatBox = document.getElementById("chat-box");
-            const messageElement = document.createElement("div");
-            messageElement.classList.add("message");
-
-            if (data.username === document.getElementById("username").value) {
-                messageElement.classList.add("my-message");
-            } else {
-                messageElement.classList.add("other-message");
-            }
-
-            messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
-            chatBox.appendChild(messageElement);
-            chatBox.scrollTop = chatBox.scrollHeight;
+    // File sharing
+    document.getElementById("fileInput").addEventListener("change",async e=>{
+      const files=[...e.target.files];
+      for(const f of files){
+        const dataURL=await new Promise(res=>{
+          const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(f);
         });
+        socket.emit("message",{username,avatar:selectedEmoji,type:"file",fileName:f.name,mime:f.type,dataURL});
+      }
+      e.target.value="";
+    });
 
-        socket.on("onlineUsers", (data) => {
-            document.getElementById("online-users").innerText = `Online: ${data.count}`;
-        });
-
-        function toggleDarkMode() {
-            document.body.classList.toggle("dark-mode");
-        }
-
-        function notifyTyping() {
-            socket.emit("typing", document.getElementById("username").value);
-        }
-
-        socket.on("typing", (username) => {
-            document.getElementById("typing").innerText = `${username} is typing...`;
-        });
-
-        socket.on("stopTyping", () => {
-            document.getElementById("typing").innerText = "";
-        });
-    </script>
-
+    // Voice messages
+    document.getElementById("micBtn").addEventListener("click",async ()=>{
+      if(isRecording){ mediaRecorder.stop(); isRecording=false; document.getElementById("micBtn").innerText="🎤"; return; }
+      try{
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        mediaRecorder=new MediaRecorder(stream); chunks=[];
+        mediaRecorder.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+        mediaRecorder.onstop=async()=>{
+          const blob=new Blob(chunks,{type:"audio/webm"});
+          const dataURL=await new Promise(res=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob);});
+          socket.emit("message",{username,avatar:selectedEmoji,type:"audio",dataURL});
+        };
+        mediaRecorder.start(); isRecording=true;
+        document.getElementById("micBtn").innerText="⏺️ Stop";
+      }catch(e){ alert("Mic blocked or unsupported"); }
+    });
+  </script>
 </body>
 </html>
