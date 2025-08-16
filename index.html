@@ -12,7 +12,6 @@
     .message{max-width:80%;padding:10px;margin:5px;border-radius:10px;word-wrap:break-word;white-space:pre-wrap;}
     .my-message{background:#667eea;color:white;align-self:flex-end;}
     .other-message{background:#e0e0e0;color:black;align-self:flex-start;}
-    .message .content{max-width:100%;}
     .message pre{background:#0f172a;color:#e2e8f0;padding:8px;border-radius:8px;overflow-x:auto;}
     .message code{font-family:monospace;background:#11182715;padding:2px 4px;border-radius:4px;}
     .chat-input{border-top:1px solid #ddd;padding:8px;background:white;display:flex;gap:5px;}
@@ -40,7 +39,7 @@
 
   <script>
     const socket=io("https://chat-app-ydcu.onrender.com");
-    let username="";
+    let username="", selectedEmoji="😀";
 
     function setReady(){
       username=document.getElementById("username").value.trim();
@@ -58,30 +57,28 @@
     function sendMessage(){
       const text=document.getElementById("message").value.trim();
       if(!text) return;
-      socket.emit("message",{username,message:text,type:"text"});
+      socket.emit("message",{username,message:text,avatar:selectedEmoji});
       document.getElementById("message").value="";
     }
 
     document.getElementById("message").addEventListener("keydown",e=>{
-      if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}
+      if(e.key==="Enter"&&!e.shiftKey){
+        e.preventDefault(); sendMessage();
+      }
     });
 
     socket.on("message",data=>{
       const box=document.getElementById("chat-box");
       const msg=document.createElement("div");
       msg.classList.add("message");
-      if(data.username===username) msg.classList.add("my-message"); else msg.classList.add("other-message");
+      if(data.username===username) msg.classList.add("my-message");
+      else msg.classList.add("other-message");
 
-      const content=document.createElement("div");
-      content.className="content";
-      if(data.type==="text"){
-        const dirty=marked.parse(data.message||"");
-        content.innerHTML=DOMPurify.sanitize(dirty);
-      } else {
-        content.textContent=data.message;
-      }
+      // Render message with Markdown
+      const dirty=marked.parse(data.message||"");
+      const safe=DOMPurify.sanitize(dirty);
+      msg.innerHTML=`<span class="avatar">${data.avatar||"😀"}</span> ${safe}`;
 
-      msg.appendChild(content);
       box.appendChild(msg);
       box.scrollTop=box.scrollHeight;
     });
