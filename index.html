@@ -18,13 +18,14 @@
             height: 100vh;
             background: linear-gradient(135deg, #667eea, #764ba2);
             transition: background 0.3s ease-in-out;
+            padding: 10px;
         }
         .dark-mode {
             background: linear-gradient(135deg, #1e1e1e, #4b4b4b);
         }
         .chat-container {
-            width: 90%;
-            max-width: 400px;
+            width: 100%;
+            max-width: 1000px;
             background: white;
             border-radius: 10px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
@@ -32,7 +33,7 @@
             transition: 0.3s;
             display: flex;
             flex-direction: column;
-            height: 90vh;
+            height: 100%;
         }
         .dark-mode .chat-container {
             background: #2c2c2c;
@@ -54,7 +55,6 @@
         }
         .chat-box {
             flex: 1;
-            height: calc(100% - 120px);
             overflow-y: auto;
             padding: 10px;
             display: flex;
@@ -95,41 +95,46 @@
             background: #555;
             color: white;
         }
-        .chat-input {
-            display: flex;
-            flex-wrap: wrap;
+        .chat-input-area {
             padding: 10px;
             border-top: 1px solid #ddd;
             background: white;
             transition: 0.3s;
+            display: flex;
+            flex-direction: column;
             gap: 5px;
         }
-        .dark-mode .chat-input {
+        .dark-mode .chat-input-area {
             background: #333;
         }
-        .chat-input input, .chat-input select {
+        .input-row {
+            display: flex;
+            gap: 5px;
+            width: 100%;
+        }
+        .chat-input-area input, .chat-input-area select {
             flex: 1;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             outline: none;
         }
-        .chat-input button {
+        .chat-input-area button {
             background: #667eea;
             color: white;
             border: none;
             padding: 10px;
             border-radius: 5px;
             cursor: pointer;
-            flex: 1;
         }
-        .chat-input button:hover {
+        .chat-input-area button:hover {
             background: #5a6edc;
         }
         .typing-indicator {
             font-size: 12px;
             color: gray;
             margin: 5px;
+            height: 18px;
         }
         .hidden {
             display: none;
@@ -160,28 +165,31 @@
         .emoji:hover {
             transform: scale(1.2);
         }
-        .emoji-selector {
-            position: relative;
-        }
         .emoji-btn {
             background: none;
             border: none;
             font-size: 20px;
             cursor: pointer;
             padding: 5px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+        .dark-mode .emoji-btn {
+            background: #555;
         }
 
+        /* Mobile specific styles */
         @media screen and (max-width: 600px) {
-            .chat-container {
+            body {
+                padding: 0;
                 height: 100vh;
-                width: 100%;
+            }
+            .chat-container {
                 border-radius: 0;
+                height: 100vh;
             }
-            .chat-input {
-                flex-direction: column;
-            }
-            .chat-input input, .chat-input select, .chat-input button {
-                width: 100%;
+            .input-row {
+                flex-wrap: wrap;
             }
             .emoji-picker {
                 bottom: 120px;
@@ -201,9 +209,9 @@
         </div>
         <div id="chat-box" class="chat-box"></div>
         <div id="typing" class="typing-indicator"></div>
-        <div class="chat-input">
-            <input id="username" placeholder="Your Name" />
-            <div class="emoji-selector">
+        <div class="chat-input-area">
+            <div class="input-row">
+                <input id="username" placeholder="Your Name" />
                 <select id="avatar-select">
                     <option value="😀">😀 Default</option>
                     <option value="😎">😎 Cool</option>
@@ -216,18 +224,14 @@
                     <option value="🐼">🐼 Panda</option>
                     <option value="🐨">🐨 Koala</option>
                     <option value="🦄">🦄 Unicorn</option>
-                    <option value="🐙">🐙 Octopus</option>
-                    <option value="👽">👽 Alien</option>
-                    <option value="🤠">🤠 Cowboy</option>
-                    <option value="🧙">🧙 Wizard</option>
                 </select>
+                <button id="set-name-btn" onclick="setUsername()">Set Name</button>
             </div>
-            <button id="set-name-btn" onclick="setUsername()">Set Name</button>
-            <div style="display: flex; width: 100%; gap: 5px;">
+            <div class="input-row">
                 <input id="message" placeholder="Type a message..." oninput="notifyTyping()" disabled />
                 <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
+                <button id="send-btn" onclick="sendMessage()" disabled>Send</button>
             </div>
-            <button onclick="sendMessage()" disabled>Send</button>
         </div>
     </div>
 
@@ -236,10 +240,8 @@
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         const socket = io("https://chat-app-ydcu.onrender.com");
-        let isTyping = false;
-        let typingTimeout;
         let selectedEmoji = "😀";
-        let hasSentFirstMessage = false;
+        let typingTimeout;
         const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
 
         // Initialize emoji picker
@@ -275,7 +277,7 @@
             socket.emit("setUsername", username);
             
             document.getElementById("message").disabled = false;
-            document.querySelector(".chat-input button:last-child").disabled = false;
+            document.getElementById("send-btn").disabled = false;
 
             document.getElementById("username").classList.add("hidden");
             document.getElementById("avatar-select").classList.add("hidden");
@@ -293,10 +295,7 @@
                 avatar: selectedEmoji 
             });
             document.getElementById("message").value = "";
-
-            if (!hasSentFirstMessage) {
-                hasSentFirstMessage = true;
-            }
+            document.getElementById("message").focus();
         }
 
         // Send message on Enter key
@@ -322,8 +321,8 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        socket.on("onlineUsers", (data) => {
-            document.getElementById("online-users").innerText = `Online: ${data.length || 0}`;
+        socket.on("onlineUsers", (users) => {
+            document.getElementById("online-users").innerText = `Online: ${users.length}`;
         });
 
         function toggleDarkMode() {
