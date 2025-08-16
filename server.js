@@ -7,59 +7,65 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
+app.use(cors({ origin: "*" }));
+
 const io = new Server(server, {
-    cors: { origin: "*" },
+  cors: { origin: "*" },
 });
 
+/**
+ * In-memory store:
+ *  Each message is:
+ *   { username, type: "text"|"file"|"audio", text?, fileName?, mime?, dataURL?, time }
+ * This is volatile (no DB) and resets on restart as requested.
+ */
 let messages = [];
 let onlineUsers = new Map();
 
-// Function to update online users
-function updateOnlineUsers() {
-    io.emit("onlineUsers", { users: Array.from(onlineUsers.values()), count: onlineUsers.size });
-}
-
-// When a user connects
 io.on("connection", (socket) => {
-    console.log(`User connected: ${socket.id}`);
+  console.log("User connected:", socket.id);
 
-    socket.emit("chatHistory", messages);
+  // Send history to the new client
+  socket.emit("chatHistory", messages);
 
-    // Listen for username setup
-    socket.on("setUsername", (username) => {
-        if (username.trim() !== "") {
-            onlineUsers.set(socket.id, username);
-            console.log(`User set name: ${username}`);
-            updateOnlineUsers();
-        }
-    });
+  // Track online users
+  socket.on("setUsername", (username) => {
+    onlineUsers.set(socket.id, username || "Anonymous");
+    io.emit("onlineUsers", Array.from(onlineUsers.values()));
+  });
 
-    // Listen for messages
-    socket.on("message", (data) => {
-        if (data.username && data.message.trim() !== "") {
-            messages.push(data);
-            io.emit("message", data);
-        }
-    });
+  // Handle incoming messages of any supported type
+  socket.on("message", (data) => {
+    const safe = {
+      username: (data && data.username) || "Anonymous",
+      type: data?.type || "text",
+      text: data?.text || "",
+      fileName: data?.fileName || "",
+      mime: data?.mime || "",
+      dataURL: data?.dataURL || "",
+      time: data?.time || Date.now(),
+    };
+    messages.push(safe);
+    // Limit history to last 500 messages to avoid memory bloat on free hosts
+    if (messages.length > 500) messages = messages.slice(-500);
+    io.emit("message", safe);
+  });
 
-    // Listen for typing
-    socket.on("typing", (username) => {
-        socket.broadcast.emit("typing", username);
-    });
+  // Typing indicators
+  socket.on("typing", (username) => {
+    socket.broadcast.emit("typing", username || "Someone");
+  });
+  socket.on("stopTyping", () => {
+    socket.broadcast.emit("stopTyping");
+  });
 
-    socket.on("stopTyping", () => {
-        socket.broadcast.emit("stopTyping");
-    });
-
-    // When a user disconnects
-    socket.on("disconnect", () => {
-        console.log(`User disconnected: ${socket.id}`);
-        onlineUsers.delete(socket.id);
-        updateOnlineUsers();
-    });
+  // Disconnect
+  socket.on("disconnect", () => {
+    onlineUsers.delete(socket.id);
+    io.emit("onlineUsers", Array.from(onlineUsers.values()));
+  });
 });
 
-// Start the server
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
