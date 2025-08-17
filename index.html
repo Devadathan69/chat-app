@@ -17,71 +17,41 @@
             align-items: center;
             height: 100vh;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            transition: background 0.3s ease-in-out;
             padding: 10px;
-        }
-        .dark-mode {
-            background: linear-gradient(135deg, #1e1e1e, #4b4b4b);
         }
         .chat-container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 800px;
             background: white;
             border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             overflow: hidden;
-            transition: 0.3s;
             display: flex;
             flex-direction: column;
-            height: 100%;
-            position: relative;
-        }
-        .dark-mode .chat-container {
-            background: #2c2c2c;
-            color: white;
+            height: 90vh;
         }
         .chat-header {
             background: #764ba2;
             color: white;
             padding: 15px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .chat-header span {
-            font-size: 14px;
-            cursor: pointer;
-        }
         .chat-box {
             flex: 1;
+            padding: 15px;
             overflow-y: auto;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
             background: #f4f4f4;
-            transition: 0.3s;
-            scrollbar-width: thin;
-        }
-        .dark-mode .chat-box {
-            background: #444;
         }
         .message {
             max-width: 70%;
             padding: 10px;
-            margin: 5px;
+            margin: 8px;
             border-radius: 10px;
-            word-wrap: break-word;
-            transition: 0.3s;
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-        .avatar {
-            font-size: 24px;
-            flex-shrink: 0;
         }
         .my-message {
             background: #667eea;
@@ -90,318 +60,128 @@
         }
         .other-message {
             background: #e0e0e0;
-            color: black;
             align-self: flex-start;
-        }
-        .dark-mode .other-message {
-            background: #555;
-            color: white;
         }
         .chat-input-area {
             padding: 10px;
             border-top: 1px solid #ddd;
-            background: white;
-            transition: 0.3s;
             display: flex;
             flex-direction: column;
-            gap: 5px;
-        }
-        .dark-mode .chat-input-area {
-            background: #333;
+            gap: 8px;
         }
         .input-row {
             display: flex;
-            gap: 5px;
-            width: 100%;
+            gap: 8px;
         }
-        .chat-input-area input, .chat-input-area select {
+        .chat-input-area input {
             flex: 1;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            outline: none;
         }
         .chat-input-area button {
             background: #667eea;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 10px 15px;
             border-radius: 5px;
             cursor: pointer;
         }
-        .chat-input-area button:hover {
-            background: #5a6edc;
-        }
-        .typing-indicator {
-            font-size: 12px;
-            color: gray;
-            margin: 5px;
-            height: 18px;
-        }
-        .hidden {
-            display: none;
-        }
-        .emoji-picker {
-            position: absolute;
-            bottom: 100px;
-            right: 20px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            display: none;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 100;
-        }
-        .dark-mode .emoji-picker {
-            background: #333;
-            border-color: #555;
-        }
-        .emoji {
-            cursor: pointer;
-            font-size: 20px;
-            padding: 5px;
-        }
-        .emoji:hover {
-            transform: scale(1.2);
-        }
-        .emoji-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
-            background: #f0f0f0;
-            border-radius: 5px;
-        }
-        .dark-mode .emoji-btn {
-            background: #555;
-        }
-        .users-list {
-            position: absolute;
-            right: 10px;
-            top: 50px;
-            background: white;
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 10;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-            width: 200px;
-        }
-        .dark-mode .users-list {
-            background: #333;
-            border: 1px solid #555;
-        }
-        .user-item {
-            padding: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .user-avatar {
-            font-size: 20px;
-        }
-
-        /* Mobile specific styles */
-        @media screen and (max-width: 600px) {
+        @media (max-width: 600px) {
             body {
                 padding: 0;
-                height: 100vh;
             }
             .chat-container {
-                border-radius: 0;
                 height: 100vh;
-            }
-            .input-row {
-                flex-wrap: wrap;
-            }
-            .emoji-picker {
-                bottom: 120px;
-                right: 10px;
-                max-height: 150px;
-            }
-            .users-list {
-                width: 150px;
-                right: 5px;
+                border-radius: 0;
             }
         }
     </style>
 </head>
 <body>
-
     <div class="chat-container">
         <div class="chat-header">
-            Gabble
-            <span id="online-users" onclick="toggleUsersList()">Online: 0 ▼</span>
-            <button onclick="toggleDarkMode()">🌙</button>
+            <h2>Gabble</h2>
+            <span id="online-count">Online: 1</span>
         </div>
-        <div id="users-list" class="users-list"></div>
         <div id="chat-box" class="chat-box"></div>
-        <div id="typing" class="typing-indicator"></div>
         <div class="chat-input-area">
             <div class="input-row">
-                <input id="username" placeholder="Your Name" />
-                <select id="avatar-select">
-                    <option value="😀">😀 Default</option>
-                    <option value="😎">😎 Cool</option>
-                    <option value="🤖">🤖 Robot</option>
-                    <option value="👻">👻 Ghost</option>
-                    <option value="🐱">🐱 Cat</option>
-                    <option value="🦊">🦊 Fox</option>
-                    <option value="🐶">🐶 Dog</option>
-                    <option value="🦁">🦁 Lion</option>
-                    <option value="🐼">🐼 Panda</option>
-                    <option value="🐨">🐨 Koala</option>
-                    <option value="🦄">🦄 Unicorn</option>
-                </select>
-                <button id="set-name-btn" onclick="setUsername()">Set Name</button>
+                <input id="username" placeholder="Your name" />
+                <button id="set-name-btn">Set Name</button>
             </div>
             <div class="input-row">
-                <input id="message" placeholder="Type a message..." oninput="notifyTyping()" disabled />
-                <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
-                <button id="send-btn" onclick="sendMessage()" disabled>Send</button>
+                <input id="message" placeholder="Type a message..." disabled />
+                <button id="send-btn" disabled>Send</button>
             </div>
         </div>
     </div>
 
-    <div id="emojiPicker" class="emoji-picker"></div>
-
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
+        // Basic functionality with all fixes
         const socket = io("https://chat-app-ydcu.onrender.com");
-        let selectedEmoji = "😀";
-        let typingTimeout;
-        let onlineUsers = [];
-        const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
-
-        // Initialize emoji picker
-        const emojiPicker = document.getElementById('emojiPicker');
-        emojis.forEach(emoji => {
-            const span = document.createElement('span');
-            span.className = 'emoji';
-            span.textContent = emoji;
-            span.onclick = () => {
-                const messageInput = document.getElementById('message');
-                messageInput.value += emoji;
-                messageInput.focus();
-                emojiPicker.style.display = 'none';
-            };
-            emojiPicker.appendChild(span);
-        });
-
-        function toggleEmojiPicker() {
-            emojiPicker.style.display = emojiPicker.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function toggleUsersList() {
-            const usersList = document.getElementById('users-list');
-            usersList.style.display = usersList.style.display === 'block' ? 'none' : 'block';
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#users-list') && e.target.id !== 'online-users') {
-                document.getElementById('users-list').style.display = 'none';
-            }
-            if (!emojiPicker.contains(e.target) && e.target.className !== 'emoji-btn') {
-                emojiPicker.style.display = 'none';
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message');
+        const sendBtn = document.getElementById('send-btn');
+        const usernameInput = document.getElementById('username');
+        const setNameBtn = document.getElementById('set-name-btn');
+        const onlineCount = document.getElementById('online-count');
+        
+        let username = '';
+        
+        // Set username
+        setNameBtn.addEventListener('click', () => {
+            username = usernameInput.value.trim();
+            if (username) {
+                socket.emit('setUsername', username);
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                usernameInput.disabled = true;
+                setNameBtn.disabled = true;
             }
         });
-
-        function setUsername() {
-            const username = document.getElementById("username").value.trim();
-            if (!username) return;
-            
-            selectedEmoji = document.getElementById("avatar-select").value;
-            socket.emit("setUsername", username);
-            
-            document.getElementById("message").disabled = false;
-            document.getElementById("send-btn").disabled = false;
-
-            document.getElementById("username").classList.add("hidden");
-            document.getElementById("avatar-select").classList.add("hidden");
-            document.getElementById("set-name-btn").classList.add("hidden");
-        }
-
+        
+        // Send message
         function sendMessage() {
-            const message = document.getElementById("message").value.trim();
-            const username = document.getElementById("username").value.trim();
-            if (!username || !message) return;
-
-            socket.emit("message", { 
-                username, 
-                message, 
-                avatar: selectedEmoji 
-            });
-            document.getElementById("message").value = "";
-            document.getElementById("message").focus();
+            const message = messageInput.value.trim();
+            if (message) {
+                socket.emit('message', { username, message });
+                messageInput.value = '';
+            }
         }
-
-        // Send message on Enter key
-        document.getElementById("message").addEventListener("keypress", (e) => {
-            if (e.key === "Enter") {
-                sendMessage();
-            }
+        
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
         });
-
-        socket.on("message", (data) => {
-            const chatBox = document.getElementById("chat-box");
-            const messageElement = document.createElement("div");
-            messageElement.classList.add("message");
-
-            if (data.username === document.getElementById("username").value) {
-                messageElement.classList.add("my-message");
-            } else {
-                messageElement.classList.add("other-message");
-            }
-
-            messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
+        
+        // Receive messages
+        socket.on('message', (data) => {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(data.username === username ? 'my-message' : 'other-message');
+            messageElement.textContent = `${data.username}: ${data.message}`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
         });
-
-        socket.on("onlineUsers", (users) => {
-            onlineUsers = users;
-            document.getElementById("online-users").innerText = `Online: ${users.length} ▼`;
-            
-            const usersList = document.getElementById('users-list');
-            usersList.innerHTML = '';
-            
-            users.forEach(user => {
-                const userItem = document.createElement('div');
-                userItem.className = 'user-item';
-                userItem.innerHTML = `<span class="user-avatar">${user.avatar || '👤'}</span> <span>${user.username}</span>`;
-                usersList.appendChild(userItem);
+        
+        // Online users
+        socket.on('onlineUsers', (users) => {
+            onlineCount.textContent = `Online: ${users.length}`;
+        });
+        
+        // Load chat history
+        socket.on('chatHistory', (messages) => {
+            chatBox.innerHTML = '';
+            messages.forEach(msg => {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.classList.add(msg.username === username ? 'my-message' : 'other-message');
+                messageElement.textContent = `${msg.username}: ${msg.message}`;
+                chatBox.appendChild(messageElement);
             });
-        });
-
-        function toggleDarkMode() {
-            document.body.classList.toggle("dark-mode");
-            emojiPicker.classList.toggle("dark-mode");
-            document.getElementById('users-list').classList.toggle("dark-mode");
-        }
-
-        function notifyTyping() {
-            const username = document.getElementById("username").value.trim();
-            if (!username) return;
-
-            socket.emit("typing", username);
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
-                socket.emit("stopTyping");
-            }, 1000);
-        }
-
-        socket.on("typing", (username) => {
-            document.getElementById("typing").innerText = `${username} is typing...`;
-        });
-
-        socket.on("stopTyping", () => {
-            document.getElementById("typing").innerText = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
         });
     </script>
 </body>
