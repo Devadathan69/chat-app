@@ -34,7 +34,6 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            position: relative;
         }
         .dark-mode .chat-container {
             background: #2c2c2c;
@@ -53,7 +52,6 @@
         }
         .chat-header span {
             font-size: 14px;
-            cursor: pointer;
         }
         .chat-box {
             flex: 1;
@@ -179,33 +177,6 @@
         .dark-mode .emoji-btn {
             background: #555;
         }
-        .users-list {
-            position: absolute;
-            right: 10px;
-            top: 50px;
-            background: white;
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 10;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-            width: 200px;
-        }
-        .dark-mode .users-list {
-            background: #333;
-            border: 1px solid #555;
-        }
-        .user-item {
-            padding: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .user-avatar {
-            font-size: 20px;
-        }
 
         /* Mobile specific styles */
         @media screen and (max-width: 600px) {
@@ -225,10 +196,6 @@
                 right: 10px;
                 max-height: 150px;
             }
-            .users-list {
-                width: 150px;
-                right: 5px;
-            }
         }
     </style>
 </head>
@@ -237,10 +204,9 @@
     <div class="chat-container">
         <div class="chat-header">
             Gabble
-            <span id="online-users" onclick="toggleUsersList()">Online: 0 ▼</span>
+            <span id="online-users">Online: 0</span>
             <button onclick="toggleDarkMode()">🌙</button>
         </div>
-        <div id="users-list" class="users-list"></div>
         <div id="chat-box" class="chat-box"></div>
         <div id="typing" class="typing-indicator"></div>
         <div class="chat-input-area">
@@ -276,7 +242,6 @@
         const socket = io("https://chat-app-ydcu.onrender.com");
         let selectedEmoji = "😀";
         let typingTimeout;
-        let onlineUsers = [];
         const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
 
         // Initialize emoji picker
@@ -298,15 +263,7 @@
             emojiPicker.style.display = emojiPicker.style.display === 'block' ? 'none' : 'block';
         }
 
-        function toggleUsersList() {
-            const usersList = document.getElementById('users-list');
-            usersList.style.display = usersList.style.display === 'block' ? 'none' : 'block';
-        }
-
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('#users-list') && e.target.id !== 'online-users') {
-                document.getElementById('users-list').style.display = 'none';
-            }
             if (!emojiPicker.contains(e.target) && e.target.className !== 'emoji-btn') {
                 emojiPicker.style.display = 'none';
             }
@@ -317,7 +274,7 @@
             if (!username) return;
             
             selectedEmoji = document.getElementById("avatar-select").value;
-            socket.emit("setUsername", { username, avatar: selectedEmoji });
+            socket.emit("setUsername", username);
             
             document.getElementById("message").disabled = false;
             document.getElementById("send-btn").disabled = false;
@@ -365,39 +322,12 @@
         });
 
         socket.on("onlineUsers", (users) => {
-            onlineUsers = users;
-            document.getElementById("online-users").innerText = `Online: ${users.length} ▼`;
-            
-            const usersList = document.getElementById('users-list');
-            usersList.innerHTML = '';
-            
-            users.forEach(user => {
-                const userItem = document.createElement('div');
-                userItem.className = 'user-item';
-                userItem.innerHTML = `<span class="user-avatar">${user.avatar || '👤'}</span> <span>${user.username}</span>`;
-                usersList.appendChild(userItem);
-            });
-        });
-
-        socket.on("chatHistory", (messages) => {
-            const chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML = '';
-            
-            messages.forEach(data => {
-                const messageElement = document.createElement("div");
-                messageElement.classList.add("message");
-                messageElement.classList.add(data.username === document.getElementById("username").value ? "my-message" : "other-message");
-                messageElement.innerHTML = `<span class="avatar">${data.avatar}</span> <span>${data.username}: ${data.message}</span>`;
-                chatBox.appendChild(messageElement);
-            });
-            
-            chatBox.scrollTop = chatBox.scrollHeight;
+            document.getElementById("online-users").innerText = `Online: ${users.length}`;
         });
 
         function toggleDarkMode() {
             document.body.classList.toggle("dark-mode");
             emojiPicker.classList.toggle("dark-mode");
-            document.getElementById('users-list').classList.toggle("dark-mode");
         }
 
         function notifyTyping() {
