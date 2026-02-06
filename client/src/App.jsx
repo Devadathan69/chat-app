@@ -5,8 +5,9 @@ import Layout from './components/Layout';
 import './index.css';
 
 // Initialize socket connection
-// Use environment variable or default to the Render backend URL found in previous version
-const SOCKET_URL = import.meta.env.VITE_SERVER_URL || "https://chat-app-ydcu.onrender.com";
+const SOCKET_URL = import.meta.env.DEV
+  ? "http://localhost:3000"
+  : (import.meta.env.VITE_SERVER_URL || "https://chat-app-ydcu.onrender.com");
 const socket = io(SOCKET_URL);
 
 function App() {
