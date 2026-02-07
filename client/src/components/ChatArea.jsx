@@ -66,7 +66,15 @@ const ChatArea = ({ socket, messages, currentRoom, currentUser, onBack }) => {
             {/* Messages */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 {messages.map((msg, index) => (
-                    <Message key={msg.id || index} message={msg} currentUser={currentUser} />
+                    {
+                        messages.map((msg, index) => (
+                            <Message
+                                key={msg.id || index}
+                                msg={msg}
+                                isMe={msg.sender === currentUser.username}
+                            />
+                        ))
+                    }
                 ))}
                 <div ref={scrollRef} />
             </div>
