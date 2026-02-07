@@ -13,6 +13,17 @@ const Layout = ({ socket, username }) => {
     const [showMobileChat, setShowMobileChat] = useState(false);
 
     useEffect(() => {
+        const handleReconnect = () => {
+            console.log("Socket reconnected. Re-joining room:", currentRoom.id);
+            if (currentRoom.id !== 'general' && currentRoom.type === 'public') {
+                socket.emit('joinRoom', currentRoom.id);
+            } else if (currentRoom.type === 'private') {
+                socket.emit('joinPrivateRoom', currentRoom.id);
+            }
+        };
+
+        socket.on('connect', handleReconnect);
+
         // Listeners
         socket.on('roomList', (list) => setRooms(list));
         socket.on('onlineUsers', (list) => setOnlineUsers(list));
@@ -30,7 +41,17 @@ const Layout = ({ socket, username }) => {
 
         socket.on('joinedRoom', (roomData) => {
             // roomData: { name, creator, type }
-            setMessages([]); // Clear messages on join
+            // Only clear messages if we actually CHANGED rooms (or it's a fresh join)
+            // But 'joinedRoom' fires on reconnect too now.
+            // We should check if it's the SAME room we are already in?
+            // If we re-join the same room, maybe don't clear?
+            // But we might have missed messages.
+            // For now, let's allow clear to be safe, or check ID.
+
+            if (roomData.name !== currentRoom.name) {
+                setMessages([]);
+            }
+
             setCurrentRoom({
                 id: roomData.name,
                 name: roomData.name,
@@ -44,21 +65,7 @@ const Layout = ({ socket, username }) => {
         socket.on('receivePrivateMessage', (msg) => {
             let partnerId;
             if (msg.senderId === socket.id) {
-                // Optimistic if in private chat
-                // Better: if I sent it, I don't need to do much unless I want to store it.
-                // But wait, the server sends back my own message to me?
-                // Yes, 'socket.emit("receivePrivateMessage", messageData);' in server.
-                // So I need to find the recipient ID to store it under IF I am the sender.
-                // Actually, I don't know the recipient ID from the messageData easily unless I missed it.
-                // In `server.js`, I didn't add `recipientId` to the message object.
-                // For now, let's rely on the user having the chat open? No, that's flaky.
-                // Let's assume the user we are "talking to" in UI is the partner.
-
-                // FIX: For this iteration, let's just push to current view if it's a private chat?
-                // or skip self-echo handling complexity for now and focus on Rooms.
-                // If I receive a message from myself, it's an echo.
-                return; // Let's ignore self-echo for private chat storage to avoid dupes/complexity if not needed.
-                // Use local append? No, let's rely on server echo but I need to know where to put it.
+                return; // Ignore self-echo for now
             } else {
                 partnerId = msg.senderId;
             }
@@ -76,9 +83,10 @@ const Layout = ({ socket, username }) => {
             });
         });
 
-        socket.on('error', (err) => alert(err));
+        socket.on('error', (err) => alert("Error: " + err));
 
         return () => {
+            socket.off('connect', handleReconnect);
             socket.off('roomList');
             socket.off('onlineUsers');
             socket.off('receiveMessage');

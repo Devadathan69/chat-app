@@ -116,6 +116,8 @@ io.on("connection", (socket) => {
                 room: user.room
             };
             io.to(user.room).emit("receiveMessage", messageData);
+        } else {
+            socket.emit("error", "Failed to send message: You are not connected to a room.");
         }
     });
 
