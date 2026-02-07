@@ -212,7 +212,7 @@ const Sidebar = ({
                                     <FaGlobe color={currentRoom.id === room.id ? 'var(--accent-color)' : 'var(--text-secondary)'} />
                                 )}
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 'bold' }}>{room.name}</div>
+                                    <div style={{ fontWeight: 'bold' }}>{String(room.name)}</div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{room.userCount} users</div>
                                 </div>
                             </div>

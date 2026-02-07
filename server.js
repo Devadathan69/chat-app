@@ -46,16 +46,22 @@ io.on("connection", (socket) => {
 
     // Create Room
     socket.on("createRoom", ({ roomName, type }) => { // type: 'public' or 'private'
-        if (!rooms[roomName]) {
-            rooms[roomName] = {
-                name: roomName,
+        if (typeof roomName !== 'string' || !roomName.trim()) {
+            return socket.emit("error", "Invalid room name");
+        }
+
+        const safeName = roomName.trim();
+
+        if (!rooms[safeName]) {
+            rooms[safeName] = {
+                name: safeName,
                 type: type || 'public',
                 creator: socket.id,
                 users: []
             };
             io.emit("roomList", getRoomList());
         }
-        joinRoom(socket, roomName);
+        joinRoom(socket, safeName);
     });
 
     // Close Room (Delete)

@@ -56,7 +56,7 @@ const ChatArea = ({ socket, messages, currentRoom, currentUser, onBack }) => {
                     <FaArrowLeft />
                 </button>
                 <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
-                    {currentRoom.type === 'private' ? `@${currentRoom.name}` : `#${currentRoom.name}`}
+                    {currentRoom.type === 'private' ? `@${String(currentRoom.name)}` : `#${String(currentRoom.name)}`}
                 </div>
                 {currentRoom.type === 'private' && (
                     <div style={{ fontSize: '0.8rem', opacity: 0.7, marginLeft: 'auto' }}>Private Chat</div>
