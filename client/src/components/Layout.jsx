@@ -10,6 +10,8 @@ const Layout = ({ socket, username }) => {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [messages, setMessages] = useState([]); // Current room messages
 
+    const [showMobileChat, setShowMobileChat] = useState(false);
+
     useEffect(() => {
         // Listeners
         socket.on('roomList', (list) => setRooms(list));
@@ -36,6 +38,7 @@ const Layout = ({ socket, username }) => {
                 creator: roomData.creator
             });
             setActiveTab('rooms');
+            setShowMobileChat(true); // Switch to chat on mobile
         });
 
         socket.on('receivePrivateMessage', (msg) => {
@@ -103,6 +106,7 @@ const Layout = ({ socket, username }) => {
             // Logic for public/private rooms
         }
         socket.emit('closeRoom', currentRoom.id);
+        setShowMobileChat(false); // Go back to list
     };
 
     const handleStartPrivateChat = (user) => {
@@ -115,6 +119,11 @@ const Layout = ({ socket, username }) => {
                 [user.id]: { messages: [], unread: 0, user: user }
             }));
         }
+        setShowMobileChat(true); // Switch to chat
+    };
+
+    const handleBackToSidebar = () => {
+        setShowMobileChat(false);
     };
 
     // Determine messages to show
@@ -126,27 +135,32 @@ const Layout = ({ socket, username }) => {
     }
 
     return (
-        <div style={{ display: 'flex', width: '90vw', height: '90vh', maxWidth: '1400px', gap: '20px' }}>
-            <Sidebar
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                rooms={rooms}
-                onlineUsers={onlineUsers}
-                currentRoom={currentRoom}
-                onJoinRoom={handleJoinRoom}
-                onJoinPrivateRoom={handleJoinPrivateRoom}
-                onCreateRoom={handleCreateRoom}
-                onCloseRoom={handleCloseRoom}
-                onStartPrivate={handleStartPrivateChat}
-                currentUser={socket}
-                privateChats={privateChats}
-            />
-            <ChatArea
-                socket={socket}
-                messages={displayMessages}
-                currentRoom={currentRoom}
-                currentUser={socket}
-            />
+        <div className="app-container" style={{ display: 'flex', width: '90vw', height: '90vh', maxWidth: '1400px', gap: '20px' }}>
+            <div className={`sidebar-wrapper ${showMobileChat ? 'hidden-mobile' : ''}`} style={{ display: 'flex', flexDirection: 'column' }}>
+                <Sidebar
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    rooms={rooms}
+                    onlineUsers={onlineUsers}
+                    currentRoom={currentRoom}
+                    onJoinRoom={handleJoinRoom}
+                    onJoinPrivateRoom={handleJoinPrivateRoom}
+                    onCreateRoom={handleCreateRoom}
+                    onCloseRoom={handleCloseRoom}
+                    onStartPrivate={handleStartPrivateChat}
+                    currentUser={socket}
+                    privateChats={privateChats}
+                />
+            </div>
+            <div className={`chat-wrapper ${!showMobileChat ? 'hidden-mobile' : ''}`} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <ChatArea
+                    socket={socket}
+                    messages={displayMessages}
+                    currentRoom={currentRoom}
+                    currentUser={socket}
+                    onBack={handleBackToSidebar}
+                />
+            </div>
         </div>
     );
 };
