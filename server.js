@@ -115,6 +115,7 @@ io.on("connection", (socket) => {
                 timestamp: new Date().toISOString(),
                 room: user.room
             };
+            console.log(`Sending message to room ${user.room} from ${user.username}`);
             io.to(user.room).emit("receiveMessage", messageData);
         } else {
             socket.emit("error", "Failed to send message: You are not connected to a room.");
@@ -196,6 +197,7 @@ function joinRoom(socket, roomName) {
     // Notify room and user
     // Send full room info to user so they know if they are creator
     socket.emit("joinedRoom", {
+        id: roomName, // Send the key as ID
         name: rooms[roomName].name,
         creator: rooms[roomName].creator,
         type: rooms[roomName].type

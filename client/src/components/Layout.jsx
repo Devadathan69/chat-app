@@ -53,7 +53,7 @@ const Layout = ({ socket, username }) => {
             }
 
             setCurrentRoom({
-                id: roomData.name,
+                id: roomData.id,
                 name: roomData.name,
                 type: roomData.type,
                 creator: roomData.creator
