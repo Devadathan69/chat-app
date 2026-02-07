@@ -18,7 +18,7 @@ const io = new Server(server, {
 // State Management
 let users = {}; // socket.id -> { id, username, room, online: true }
 let rooms = {
-    'general': { name: 'General', type: 'public', users: [] }
+    'general': { name: 'General', type: 'public', creator: 'system', users: [] }
 }; // roomName -> { name, type, users: [socketId] }
 
 io.on("connection", (socket) => {
@@ -29,10 +29,10 @@ io.on("connection", (socket) => {
 
     // User Login (Set Username)
     socket.on("joinApp", (username) => {
-        users[socket.id] = { 
-            id: socket.id, 
-            username, 
-            room: null 
+        users[socket.id] = {
+            id: socket.id,
+            username,
+            room: null
         };
         // Auto-join General
         joinRoom(socket, 'general');
@@ -45,12 +45,52 @@ io.on("connection", (socket) => {
     });
 
     // Create Room
-    socket.on("createRoom", (roomName) => {
+    socket.on("createRoom", ({ roomName, type }) => { // type: 'public' or 'private'
         if (!rooms[roomName]) {
-            rooms[roomName] = { name: roomName, type: 'public', users: [] };
+            rooms[roomName] = {
+                name: roomName,
+                type: type || 'public',
+                creator: socket.id,
+                users: []
+            };
             io.emit("roomList", getRoomList());
         }
         joinRoom(socket, roomName);
+    });
+
+    // Close Room (Delete)
+    socket.on("closeRoom", (roomName) => {
+        const room = rooms[roomName];
+        if (room && room.creator === socket.id) {
+            // Kick everyone out
+            room.users.forEach(userId => {
+                const userSocket = io.sockets.sockets.get(userId);
+                if (userSocket) {
+                    leaveRoom(userSocket);
+                    // Notify them
+                    userSocket.emit("receiveMessage", {
+                        id: uuidv4(),
+                        type: 'system',
+                        content: `Room "${roomName}" has been closed by the host.`,
+                        timestamp: new Date().toISOString()
+                    });
+                    // Join general fallback
+                    joinRoom(userSocket, 'general');
+                }
+            });
+
+            delete rooms[roomName];
+            io.emit("roomList", getRoomList());
+        }
+    });
+
+    // Join Private Room (via code/name)
+    socket.on("joinPrivateRoom", (roomName) => {
+        if (rooms[roomName]) {
+            joinRoom(socket, roomName);
+        } else {
+            socket.emit("error", "Room not found");
+        }
     });
 
     // Send Message (Text, Code, File)
@@ -111,6 +151,12 @@ io.on("connection", (socket) => {
             leaveRoom(socket);
             delete users[socket.id];
             broadcastOnlineUsers();
+
+            // Optional: If creator leaves, close room? Or transfer ownership?
+            // For now, let's keep room open until explicit close, 
+            // but if empty, maybe delete?
+            // If it's a private custom room and empty, delete it to save memory.
+            // (handled in leaveRoom logic below if modified)
         }
         console.log("User disconnected:", socket.id);
     });
@@ -119,7 +165,7 @@ io.on("connection", (socket) => {
 // Helper Functions
 function joinRoom(socket, roomName) {
     const user = users[socket.id];
-    if (!user) return; // Should not happen if flow is correct
+    if (!user) return;
 
     // Leave current room if any
     if (user.room) {
@@ -127,7 +173,11 @@ function joinRoom(socket, roomName) {
     }
 
     if (!rooms[roomName]) {
-        rooms[roomName] = { name: roomName, type: 'public', users: [] };
+        // If trying to join non-existent, default to create public? 
+        // Or fail? For generic 'joinRoom' we might auto-create, 
+        // but let's restrict auto-create to public for simplicity in this flow,
+        // or just allow it.
+        rooms[roomName] = { name: roomName, type: 'public', creator: socket.id, users: [] };
         io.emit("roomList", getRoomList());
     }
 
@@ -136,7 +186,13 @@ function joinRoom(socket, roomName) {
     rooms[roomName].users.push(socket.id);
 
     // Notify room and user
-    socket.emit("joinedRoom", roomName);
+    // Send full room info to user so they know if they are creator
+    socket.emit("joinedRoom", {
+        name: rooms[roomName].name,
+        creator: rooms[roomName].creator,
+        type: rooms[roomName].type
+    });
+
     // Send system message to room
     io.to(roomName).emit("receiveMessage", {
         id: uuidv4(),
@@ -144,9 +200,6 @@ function joinRoom(socket, roomName) {
         content: `${user.username} has joined the room.`,
         timestamp: new Date().toISOString()
     });
-    
-    // Update UI for everyone in that room (if we want room-specific user lists, for now global online list)
-    // Actually, let's keep the main request: Sidebar shows "Online People".
 }
 
 function leaveRoom(socket) {
@@ -154,26 +207,37 @@ function leaveRoom(socket) {
     if (user && user.room && rooms[user.room]) {
         const roomName = user.room;
         socket.leave(roomName);
-        rooms[roomName].users = rooms[roomName].users.filter(id => id !== socket.id);
-        
-        // Notify leaving
-        io.to(roomName).emit("receiveMessage", {
-            id: uuidv4(),
-            type: 'system',
-            content: `${user.username} has left the room.`,
-            timestamp: new Date().toISOString()
-        });
-        
+        if (rooms[roomName]) {
+            rooms[roomName].users = rooms[roomName].users.filter(id => id !== socket.id);
+
+            // Notify leaving
+            io.to(roomName).emit("receiveMessage", {
+                id: uuidv4(),
+                type: 'system',
+                content: `${user.username} has left the room.`,
+                timestamp: new Date().toISOString()
+            });
+
+            // Cleanup empty rooms (except 'general')
+            if (rooms[roomName].users.length === 0 && roomName !== 'general') {
+                delete rooms[roomName];
+                io.emit("roomList", getRoomList());
+            }
+        }
+
         user.room = null;
     }
 }
 
 function getRoomList() {
-    return Object.keys(rooms).map(key => ({
-        id: key,
-        name: rooms[key].name,
-        userCount: rooms[key].users.length
-    }));
+    return Object.keys(rooms)
+        .filter(key => rooms[key].type === 'public') // Only list public rooms
+        .map(key => ({
+            id: key,
+            name: rooms[key].name,
+            userCount: rooms[key].users.length,
+            type: rooms[key].type
+        }));
 }
 
 function broadcastOnlineUsers() {

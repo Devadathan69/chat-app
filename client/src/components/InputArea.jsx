@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react';
-import { FaPaperPlane, FaPaperclip, FaCode, FaTimes } from 'react-icons/fa';
+import { FaPaperPlane, FaPaperclip, FaCode, FaTimes, FaSmile } from 'react-icons/fa';
+import EmojiPicker from 'emoji-picker-react';
 
 const InputArea = ({ onSendMessage }) => {
     const [message, setMessage] = useState('');
     const [isCodeMode, setIsCodeMode] = useState(false);
     const [codeLanguage, setCodeLanguage] = useState('javascript');
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const fileInputRef = useRef(null);
 
     const handleSend = () => {
@@ -17,6 +19,7 @@ const InputArea = ({ onSendMessage }) => {
             onSendMessage({ type: 'text', content: message });
         }
         setMessage('');
+        setShowEmojiPicker(false);
     };
 
     const handleKeyPress = (e) => {
@@ -43,6 +46,10 @@ const InputArea = ({ onSendMessage }) => {
         e.target.value = null;
     };
 
+    const onEmojiClick = (emojiObject) => {
+        setMessage(prev => prev + emojiObject.emoji);
+    };
+
     return (
         <div style={{
             background: 'var(--glass-bg)',
@@ -51,8 +58,21 @@ const InputArea = ({ onSendMessage }) => {
             padding: '15px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px'
+            gap: '10px',
+            position: 'relative'
         }}>
+            {showEmojiPicker && (
+                <div style={{ position: 'absolute', bottom: '80px', right: '20px', zIndex: 10 }}>
+                    <EmojiPicker
+                        onEmojiClick={onEmojiClick}
+                        theme="dark"
+                        searchDisabled={true} // Simplify for now
+                        width="300px"
+                        height="350px"
+                    />
+                </div>
+            )}
+
             {isCodeMode && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
                     <span style={{ fontSize: '0.9rem', color: 'var(--accent-color)', fontWeight: 'bold' }}>Code Mode</span>
@@ -113,6 +133,15 @@ const InputArea = ({ onSendMessage }) => {
                     }}
                     rows={isCodeMode ? 5 : 1}
                 />
+
+                <button
+                    className="btn-icon"
+                    title="Emoji"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    style={{ color: showEmojiPicker ? 'var(--accent-color)' : 'var(--text-secondary)' }}
+                >
+                    <FaSmile />
+                </button>
 
                 <button className="btn btn-primary" onClick={handleSend} style={{ borderRadius: '50%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <FaPaperPlane />

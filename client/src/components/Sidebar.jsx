@@ -1,21 +1,36 @@
+
 import { useState } from 'react';
-import { FaUsers, FaGlobe, FaPlus, FaComments, FaCircle } from 'react-icons/fa';
+import { FaGlobe, FaPlus, FaCircle, FaLock, FaKey, FaTimesCircle } from 'react-icons/fa';
 
 const Sidebar = ({
     activeTab, setActiveTab,
     rooms, onlineUsers,
-    currentRoom, onJoinRoom, onCreateRoom, onStartPrivate,
+    currentRoom, onJoinRoom, onJoinPrivateRoom, onCreateRoom, onCloseRoom, onStartPrivate,
     currentUser, privateChats
 }) => {
     const [newRoomName, setNewRoomName] = useState('');
+    const [roomType, setRoomType] = useState('public');
     const [isCreating, setIsCreating] = useState(false);
+
+    const [joinCode, setJoinCode] = useState('');
+    const [isJoining, setIsJoining] = useState(false);
 
     const handleCreateSubmit = (e) => {
         e.preventDefault();
         if (newRoomName.trim()) {
-            onCreateRoom(newRoomName.trim());
+            onCreateRoom(newRoomName.trim(), roomType);
             setNewRoomName('');
             setIsCreating(false);
+            setRoomType('public');
+        }
+    };
+
+    const handleJoinSubmit = (e) => {
+        e.preventDefault();
+        if (joinCode.trim()) {
+            onJoinPrivateRoom(joinCode.trim());
+            setJoinCode('');
+            setIsJoining(false);
         }
     };
 
@@ -59,6 +74,16 @@ const Sidebar = ({
             <div style={{ flex: 1, overflowY: 'auto' }}>
                 {activeTab === 'rooms' ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {/* Current Room Control */}
+                        {currentRoom.creator === currentUser.id && currentRoom.id !== 'general' && (
+                            <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <button onClick={onCloseRoom} className="btn" style={{ background: 'rgba(255,50,50,0.2)', color: '#ff6b6b', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <FaTimesCircle /> Close Current Room
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Public List */}
                         {rooms.map(room => (
                             <div
                                 key={room.id}
@@ -74,7 +99,11 @@ const Sidebar = ({
                                     border: currentRoom.id === room.id ? '1px solid var(--accent-color)' : '1px solid transparent'
                                 }}
                             >
-                                <FaGlobe color={currentRoom.id === room.id ? 'var(--accent-color)' : 'var(--text-secondary)'} />
+                                {room.type === 'private' ? (
+                                    <FaLock color={currentRoom.id === room.id ? 'var(--accent-color)' : 'var(--text-secondary)'} />
+                                ) : (
+                                    <FaGlobe color={currentRoom.id === room.id ? 'var(--accent-color)' : 'var(--text-secondary)'} />
+                                )}
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontWeight: 'bold' }}>{room.name}</div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{room.userCount} users</div>
@@ -82,37 +111,89 @@ const Sidebar = ({
                             </div>
                         ))}
 
-                        {!isCreating ? (
-                            <button
-                                onClick={() => setIsCreating(true)}
-                                style={{
-                                    background: 'rgba(255,255,255,0.05)',
-                                    border: '1px dashed rgba(255,255,255,0.3)',
-                                    color: 'var(--text-secondary)',
-                                    padding: '10px',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    marginTop: '10px'
-                                }}
-                            >
-                                <FaPlus /> Create Room
-                            </button>
-                        ) : (
-                            <form onSubmit={handleCreateSubmit} style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
-                                <input
-                                    autoFocus
-                                    placeholder="Room Name"
-                                    value={newRoomName}
-                                    onChange={(e) => setNewRoomName(e.target.value)}
-                                    style={{ flex: 1, padding: '8px', fontSize: '0.9rem' }}
-                                />
-                                <button type="submit" className="btn-primary" style={{ padding: '8px' }}><FaPlus /></button>
-                            </form>
-                        )}
+                        {/* Actions */}
+                        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {!isCreating && !isJoining && (
+                                <>
+                                    <button
+                                        onClick={() => setIsCreating(true)}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.05)',
+                                            border: '1px dashed rgba(255,255,255,0.3)',
+                                            color: 'var(--text-secondary)',
+                                            padding: '10px',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        <FaPlus /> Create Room
+                                    </button>
+                                    <button
+                                        onClick={() => setIsJoining(true)}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.05)',
+                                            border: '1px dashed rgba(255,255,255,0.3)',
+                                            color: 'var(--text-secondary)',
+                                            padding: '10px',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        <FaKey /> Join Private Room
+                                    </button>
+                                </>
+                            )}
+
+                            {isCreating && (
+                                <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Create Room</span>
+                                        <FaTimesCircle onClick={() => setIsCreating(false)} style={{ cursor: 'pointer' }} />
+                                    </div>
+                                    <input
+                                        autoFocus
+                                        placeholder="Room Name"
+                                        value={newRoomName}
+                                        onChange={(e) => setNewRoomName(e.target.value)}
+                                        style={{ padding: '8px', fontSize: '0.9rem' }}
+                                    />
+                                    <div style={{ display: 'flex', gap: '10px', fontSize: '0.8rem' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                            <input type="radio" name="type" checked={roomType === 'public'} onChange={() => setRoomType('public')} /> Public
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                            <input type="radio" name="type" checked={roomType === 'private'} onChange={() => setRoomType('private')} /> Private
+                                        </label>
+                                    </div>
+                                    <button type="submit" className="btn-primary" style={{ padding: '8px', fontSize: '0.9rem' }}>Create</button>
+                                </form>
+                            )}
+
+                            {isJoining && (
+                                <form onSubmit={handleJoinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Join Private</span>
+                                        <FaTimesCircle onClick={() => setIsJoining(false)} style={{ cursor: 'pointer' }} />
+                                    </div>
+                                    <input
+                                        autoFocus
+                                        placeholder="Room Code (Name)"
+                                        value={joinCode}
+                                        onChange={(e) => setJoinCode(e.target.value)}
+                                        style={{ padding: '8px', fontSize: '0.9rem' }}
+                                    />
+                                    <button type="submit" className="btn-primary" style={{ padding: '8px', fontSize: '0.9rem' }}>Join</button>
+                                </form>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

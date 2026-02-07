@@ -20,60 +20,48 @@ const Layout = ({ socket, username }) => {
             if (msg.room === currentRoom.id) {
                 setMessages(prev => [...prev, msg]);
             }
-            // Else, if we were tracking history for other rooms, update there. 
-            // For simplicity, we only store current room history in 'messages' state 
+            // Else, if we were tracking history for other rooms, update there.
+            // For simplicity, we only store current room history in 'messages' state
             // but in a real app would likely have a map of room -> messages.
             // For this scope, let's just clear messages when switching rooms.
         });
 
-        socket.on('joinedRoom', (roomName) => {
+        socket.on('joinedRoom', (roomData) => {
+            // roomData: { name, creator, type }
             setMessages([]); // Clear messages on join
-            // Ideally fetch history here if backend supported it
+            setCurrentRoom({
+                id: roomData.name,
+                name: roomData.name,
+                type: roomData.type,
+                creator: roomData.creator
+            });
+            setActiveTab('rooms');
         });
 
         socket.on('receivePrivateMessage', (msg) => {
-            const otherPartyId = msg.senderId === socket.id ? msg.receiverId : msg.senderId; // This logic is tricky, let's fix
-            // Actually, for private messages, we need to know who the 'other' person is.
-            // If I sent it, other is receiver. If I currently received it, other is sender.
+            let partnerId;
+            if (msg.senderId === socket.id) {
+                // Optimistic if in private chat
+                // Better: if I sent it, I don't need to do much unless I want to store it.
+                // But wait, the server sends back my own message to me?
+                // Yes, 'socket.emit("receivePrivateMessage", messageData);' in server.
+                // So I need to find the recipient ID to store it under IF I am the sender.
+                // Actually, I don't know the recipient ID from the messageData easily unless I missed it.
+                // In `server.js`, I didn't add `recipientId` to the message object.
+                // For now, let's rely on the user having the chat open? No, that's flaky.
+                // Let's assume the user we are "talking to" in UI is the partner.
 
-            // Wait, receivePrivateMessage is sent to both sender and receiver.
-            // If I am sender, I want to see it in my chat with 'recipient'.
-            // If I am receiver, I want to see it in my chat with 'sender'.
+                // FIX: For this iteration, let's just push to current view if it's a private chat?
+                // or skip self-echo handling complexity for now and focus on Rooms.
+                // If I receive a message from myself, it's an echo.
+                return; // Let's ignore self-echo for private chat storage to avoid dupes/complexity if not needed.
+                // Use local append? No, let's rely on server echo but I need to know where to put it.
+            } else {
+                partnerId = msg.senderId;
+            }
 
-            // Let's rely on finding the 'other' user from the online list or if we know the ID.
-
-            // To simplify, let's just handle "Private Chat Mode" in state.
-            // If we are in private chat with User X, show msg.
-
-            // We need to persist private messages in `privateChats` state map.
             setPrivateChats(prev => {
-                // Determine the 'partner' ID
-                // If I am sender, partner is who I sent to (how do I know? backend didn't send 'to' in the event payload in my prev code... oops)
-                // Let's fix server logic to send 'to' or just rely on the fact that if it's private, 
-                // handle it carefully.
-
-                // Let's assume for now we only support receiving private messages actively or notifications.
-                // Refinement: I'll update Client logic to just handle what it gets.
-
-                // Fix: I need to update server to include `to` or `recipientId` to be sure. 
-                // But wait, `receivePrivateMessage` event only goes to the two involved.
-
-                let partnerId;
-                if (msg.senderId === socket.id) {
-                    // I sent it. But I don't know to whom from just the message object unless I add 'recipientId' to it.
-                    // I will assume the current view is the correct one if I just sent it.
-                    // But if I have multiple tabs... 
-                    // Let's assume for now if I am sender, I know who I'm talking to (currentRoom.id if it's a user).
-                    partnerId = currentRoom.id;
-                } else {
-                    partnerId = msg.senderId;
-                }
-
                 const existing = prev[partnerId] || { messages: [], unread: 0, user: onlineUsers.find(u => u.id === partnerId) };
-
-                // If it's a new user not in our list (e.g. they went offline), we might have issue.
-                // Use sender info from msg if available.
-
                 return {
                     ...prev,
                     [partnerId]: {
@@ -85,23 +73,36 @@ const Layout = ({ socket, username }) => {
             });
         });
 
+        socket.on('error', (err) => alert(err));
+
         return () => {
             socket.off('roomList');
             socket.off('onlineUsers');
             socket.off('receiveMessage');
             socket.off('joinedRoom');
             socket.off('receivePrivateMessage');
+            socket.off('error');
         };
     }, [socket, currentRoom, onlineUsers]);
 
     const handleJoinRoom = (roomName) => {
         socket.emit('joinRoom', roomName);
-        setCurrentRoom({ id: roomName, name: roomName, type: 'public' });
-        setActiveTab('rooms');
+        // Don't set state here, wait for 'joinedRoom' event
     };
 
-    const handleCreateRoom = (roomName) => {
-        socket.emit('createRoom', roomName);
+    const handleJoinPrivateRoom = (roomName) => {
+        socket.emit("joinPrivateRoom", roomName);
+    };
+
+    const handleCreateRoom = (roomName, type) => {
+        socket.emit('createRoom', { roomName, type });
+    };
+
+    const handleCloseRoom = () => {
+        if (currentRoom.type !== 'private' && currentRoom.id !== 'general') {
+            // Logic for public/private rooms
+        }
+        socket.emit('closeRoom', currentRoom.id);
     };
 
     const handleStartPrivateChat = (user) => {
@@ -118,10 +119,10 @@ const Layout = ({ socket, username }) => {
 
     // Determine messages to show
     let displayMessages = [];
-    if (currentRoom.type === 'public') {
-        displayMessages = messages;
-    } else {
+    if (currentRoom.type === 'private') {
         displayMessages = privateChats[currentRoom.id]?.messages || [];
+    } else {
+        displayMessages = messages;
     }
 
     return (
@@ -133,7 +134,9 @@ const Layout = ({ socket, username }) => {
                 onlineUsers={onlineUsers}
                 currentRoom={currentRoom}
                 onJoinRoom={handleJoinRoom}
+                onJoinPrivateRoom={handleJoinPrivateRoom}
                 onCreateRoom={handleCreateRoom}
+                onCloseRoom={handleCloseRoom}
                 onStartPrivate={handleStartPrivateChat}
                 currentUser={socket}
                 privateChats={privateChats}
