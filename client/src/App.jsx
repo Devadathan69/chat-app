@@ -17,6 +17,10 @@ function App() {
   useEffect(() => {
     function onConnect() {
       setIsConnected(true);
+      if (username) {
+        console.log("Reconnecting user:", username);
+        socket.emit('joinApp', username);
+      }
     }
 
     function onDisconnect() {
@@ -30,7 +34,7 @@ function App() {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
     };
-  }, []);
+  }, [username]);
 
   const handleLogin = (name) => {
     setUsername(name);
