@@ -6,6 +6,8 @@ import { FaArrowLeft } from 'react-icons/fa';
 const ChatArea = ({ socket, messages, currentRoom, currentUser, onBack }) => {
     const scrollRef = useRef();
 
+    if (!currentRoom) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>Select a room to start chatting</div>;
+
     useEffect(() => {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);

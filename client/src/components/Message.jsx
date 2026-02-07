@@ -3,6 +3,8 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FaFileDownload, FaCode } from 'react-icons/fa';
 
 const Message = ({ msg, isMe }) => {
+    if (!msg) return null;
+
     if (msg.type === 'system') {
         return (
             <div style={{

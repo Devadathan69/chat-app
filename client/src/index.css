@@ -126,6 +126,8 @@ textarea:focus {
   .app-container {
     width: 100vw !important;
     height: 100vh !important;
+    height: 100dvh !important;
+    /* Dynamic Viewport Height for mobile browsers */
     max-width: none !important;
     margin: 0 !important;
     border-radius: 0 !important;

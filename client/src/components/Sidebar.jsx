@@ -37,6 +37,7 @@ const Sidebar = ({
     return (
         <div className="glass-panel" style={{
             width: '300px',
+            height: '100%', // Ensure it takes full height of wrapper
             display: 'flex',
             flexDirection: 'column',
             padding: '20px',
