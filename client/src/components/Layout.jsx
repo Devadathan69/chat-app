@@ -169,17 +169,6 @@ const Layout = ({ socket, username }) => {
                     onBack={handleBackToSidebar}
                 />
             </div>
-            {/* DEBUG OVERLAY - REMOVE LATER */}
-            <div style={{
-                position: 'fixed', bottom: '10px', right: '10px',
-                background: 'rgba(0,0,0,0.8)', color: 'lime', padding: '10px',
-                fontSize: '10px', pointerEvents: 'none', zIndex: 9999
-            }}>
-                RoomID: {currentRoom.id} <br />
-                Msgs: {displayMessages.length} <br />
-                User: {username} <br />
-                Socket: {socket.id}
-            </div>
         </div>
     );
 };
